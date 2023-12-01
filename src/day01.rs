@@ -1,14 +1,16 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 
 #[aoc_generator(day1, part1)]
-pub fn generator(input: &str) -> Vec<Vec<u32>> {
+pub fn generator(input: &str) -> Vec<(u32, u32)> {
+    let to_digit = |o: Option<u8>| u32::from(o.unwrap() - b'0');
+
     input
         .lines()
         .map(|line| {
-            line.bytes()
-                .filter(|x| x.is_ascii_digit())
-                .map(|b| (b - b'0') as u32)
-                .collect()
+            (
+                to_digit(line.bytes().find(|b| b.is_ascii_digit())),
+                to_digit(line.bytes().rev().find(|b| b.is_ascii_digit())),
+            )
         })
         .collect()
 }
@@ -36,29 +38,55 @@ fn find_from_pos(input: &[u8], pos: usize) -> Option<u32> {
     }
 }
 
-fn parse(s: &[u8]) -> Vec<u32> {
-    (0..s.len()).filter_map(|i| find_from_pos(s, i)).collect()
+fn find_from_pos_rev(input: &[u8], pos: usize) -> Option<u32> {
+    let pos = pos + 1;
+    let input = &input[..pos];
+
+    if input[input.len() - 1].is_ascii_digit() {
+        return Some(u32::from(input[input.len() - 1] - b'0'));
+    }
+
+    let end = input.len().saturating_sub(3);
+
+    match &input[end..] {
+        b"one" => Some(1),
+        b"two" => Some(2),
+        b"ree" => input[..end].ends_with(b"th").then_some(3),
+        b"our" => input[..end].ends_with(b"f").then_some(4),
+        b"ive" => input[..end].ends_with(b"f").then_some(5),
+        b"six" => Some(6),
+        b"ven" => input[..end].ends_with(b"se").then_some(7),
+        b"ght" => input[..end].ends_with(b"ei").then_some(8),
+        b"ine" => input[..end].ends_with(b"n").then_some(9),
+        _ => None,
+    }
 }
 
 #[aoc_generator(day1, part2)]
-pub fn generator_two(input: &str) -> Vec<Vec<u32>> {
-    input.lines().map(|l| parse(l.as_bytes())).collect()
+pub fn generator_two(input: &str) -> Vec<(u32, u32)> {
+    input
+        .lines()
+        .map(|s| {
+            let s = s.as_bytes();
+            (
+                (0..s.len()).find_map(|pos| find_from_pos(s, pos)).unwrap(),
+                (0..s.len())
+                    .rev()
+                    .find_map(|pos| find_from_pos_rev(s, pos))
+                    .unwrap(),
+            )
+        })
+        .collect()
 }
 
 #[aoc(day1, part1)]
-pub fn part1(inputs: &[Vec<u32>]) -> u32 {
-    inputs
-        .iter()
-        .map(|l: &Vec<u32>| l.first().unwrap() * 10 + l.last().unwrap())
-        .sum()
+pub fn part1(inputs: &[(u32, u32)]) -> u32 {
+    inputs.iter().map(|(a, b)| a * 10 + b).sum()
 }
 
 #[aoc(day1, part2)]
-pub fn part2(inputs: &[Vec<u32>]) -> u32 {
-    inputs
-        .iter()
-        .map(|l: &Vec<u32>| l.first().unwrap() * 10 + l.last().unwrap())
-        .sum()
+pub fn part2(inputs: &[(u32, u32)]) -> u32 {
+    inputs.iter().map(|(a, b)| a * 10 + b).sum()
 }
 
 #[cfg(test)]
