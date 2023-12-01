@@ -1,5 +1,4 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use nom::{branch::alt, bytes::complete::tag, combinator::value, IResult};
 
 #[aoc_generator(day1, part1)]
 pub fn generator(input: &str) -> Vec<Vec<u32>> {
@@ -14,33 +13,31 @@ pub fn generator(input: &str) -> Vec<Vec<u32>> {
         .collect()
 }
 
-fn parse_digit_ascii(s: &[u8]) -> IResult<&[u8], u32> {
-    alt((
-        value(8, tag("eight")),
-        value(5, tag("five")),
-        value(4, tag("four")),
-        value(9, tag("nine")),
-        value(1, tag("one")),
-        value(7, tag("seven")),
-        value(6, tag("six")),
-        value(3, tag("three")),
-        value(2, tag("two")),
-        value(0, tag("zero")),
-    ))(s)
+fn find_from_pos(input: &[u8], pos: usize) -> Option<u32> {
+    let input = &input[pos..];
+
+    if input[0].is_ascii_digit() {
+        return Some(u32::from(input[0] - b'0'));
+    }
+
+    let end = 3.min(input.len());
+
+    match &input[0..end] {
+        b"one" => Some(1),
+        b"two" => Some(2),
+        b"thr" => input[end..].starts_with(b"ee").then_some(3),
+        b"fou" => input[end..].starts_with(b"r").then_some(4),
+        b"fiv" => input[end..].starts_with(b"e").then_some(5),
+        b"six" => Some(6),
+        b"sev" => input[end..].starts_with(b"en").then_some(7),
+        b"eig" => input[end..].starts_with(b"ht").then_some(8),
+        b"nin" => input[end..].starts_with(b"e").then_some(9),
+        _ => None,
+    }
 }
 
 fn parse(s: &[u8]) -> Vec<u32> {
-    (0..s.len())
-        .filter_map(|i| {
-            if s[i].is_ascii_digit() {
-                Some(u32::from(s[i] - b'0'))
-            } else if let Ok((_, n)) = parse_digit_ascii(&s[i..]) {
-                Some(n)
-            } else {
-                None
-            }
-        })
-        .collect()
+    (0..s.len()).filter_map(|i| find_from_pos(s, i)).collect()
 }
 
 #[aoc_generator(day1, part2)]
