@@ -1,5 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use nom::{branch::alt, bytes::complete::tag, combinator::map, IResult};
+use nom::{branch::alt, bytes::complete::tag, combinator::value, IResult};
 
 #[aoc_generator(day1, part1)]
 pub fn generator(input: &str) -> Vec<Vec<u32>> {
@@ -16,16 +16,16 @@ pub fn generator(input: &str) -> Vec<Vec<u32>> {
 
 fn parse_digit_ascii(s: &[u8]) -> IResult<&[u8], u32> {
     alt((
-        map(tag("eight"), |_| 8),
-        map(tag("five"), |_| 5),
-        map(tag("four"), |_| 4),
-        map(tag("nine"), |_| 9),
-        map(tag("one"), |_| 1),
-        map(tag("seven"), |_| 7),
-        map(tag("six"), |_| 6),
-        map(tag("three"), |_| 3),
-        map(tag("two"), |_| 2),
-        map(tag("zero"), |_| 0),
+        value(8, tag("eight")),
+        value(5, tag("five")),
+        value(4, tag("four")),
+        value(9, tag("nine")),
+        value(1, tag("one")),
+        value(7, tag("seven")),
+        value(6, tag("six")),
+        value(3, tag("three")),
+        value(2, tag("two")),
+        value(0, tag("zero")),
     ))(s)
 }
 
@@ -102,15 +102,15 @@ zoneight234
         use super::*;
 
         const INPUT: &str = include_str!("../input/2023/day1.txt");
-        const ANSWERS: (usize, usize) = (0, 0);
+        const ANSWERS: (u32, u32) = (53651, 53894);
 
         #[test]
         pub fn test() {
             let input = INPUT.trim_end_matches('\n');
             // let output = generator(input);
 
-            // assert_eq!(part1(&output), ANSWERS.0);
-            // assert_eq!(part2(&output), ANSWERS.1);
+            assert_eq!(part1(&generator(input)), ANSWERS.0);
+            assert_eq!(part2(&generator_two(input)), ANSWERS.1);
         }
     }
 }
