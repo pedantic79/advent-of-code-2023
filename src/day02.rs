@@ -7,9 +7,9 @@ use nom::{
     IResult,
 };
 
-use crate::common::nom::nom_usize;
+use crate::common::nom::{nom_lines, nom_usize, process_input};
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Default)]
 pub struct CubeSet {
     red: usize,
     green: usize,
@@ -27,10 +27,10 @@ impl CubeSet {
 }
 
 fn parse_color(s: &str) -> IResult<&str, (usize, &str)> {
-    pair(nom_usize, alt((tag(" red"), tag(" blue"), tag(" green"))))(s)
+    pair(nom_usize, alt((tag(" red"), tag(" green"), tag(" blue"))))(s)
 }
 
-fn parse_object(s: &str) -> IResult<&str, CubeSet> {
+fn parse_cube_set(s: &str) -> IResult<&str, CubeSet> {
     let (s, v) = separated_list1(tag(", "), parse_color)(s)?;
     assert!(v.len() <= 3);
     let (mut red, mut green, mut blue) = (0, 0, 0);
@@ -49,13 +49,13 @@ fn parse_object(s: &str) -> IResult<&str, CubeSet> {
 fn parse_line(s: &str) -> IResult<&str, Vec<CubeSet>> {
     preceded(
         tuple((tag("Game "), nom_usize, tag(": "))),
-        separated_list1(tag("; "), parse_object),
+        separated_list1(tag("; "), parse_cube_set),
     )(s)
 }
 
 #[aoc_generator(day2)]
 pub fn generator(input: &str) -> Vec<Vec<CubeSet>> {
-    input.lines().map(|l| parse_line(l).unwrap().1).collect()
+    process_input(nom_lines(parse_line))(input)
 }
 
 #[aoc(day2, part1)]
@@ -74,16 +74,12 @@ pub fn part1(inputs: &[Vec<CubeSet>]) -> usize {
 }
 
 fn max(cubes: &[CubeSet]) -> CubeSet {
-    cubes
-        .iter()
-        .copied()
-        .reduce(|acc, x| {
-            let red = acc.red.max(x.red);
-            let green = acc.green.max(x.green);
-            let blue = acc.blue.max(x.blue);
-            CubeSet { red, green, blue }
-        })
-        .unwrap()
+    cubes.iter().fold(CubeSet::default(), |acc, x| {
+        let red = acc.red.max(x.red);
+        let green = acc.green.max(x.green);
+        let blue = acc.blue.max(x.blue);
+        CubeSet { red, green, blue }
+    })
 }
 
 #[aoc(day2, part2)]
