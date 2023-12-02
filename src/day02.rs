@@ -7,7 +7,7 @@ use nom::{
     IResult,
 };
 
-use crate::common::nom::{nom_lines, nom_usize, process_input};
+use crate::common::nom::{fold_separated_list0, nom_lines, nom_usize, process_input};
 
 #[derive(Debug, PartialEq, Eq, Default)]
 pub struct CubeSet {
@@ -46,45 +46,40 @@ fn parse_cube_set(s: &str) -> IResult<&str, CubeSet> {
     Ok((s, CubeSet { red, green, blue }))
 }
 
-fn parse_line(s: &str) -> IResult<&str, Vec<CubeSet>> {
+fn parse_merged_cube_set(s: &str) -> IResult<&str, CubeSet> {
+    // separated_list1(tag("; "), parse_cube_set)
+    fold_separated_list0(tag("; "), parse_cube_set, CubeSet::default, |acc, c| {
+        let red = acc.red.max(c.red);
+        let green = acc.green.max(c.green);
+        let blue = acc.blue.max(c.blue);
+        CubeSet { red, green, blue }
+    })(s)
+}
+
+fn parse_line(s: &str) -> IResult<&str, CubeSet> {
     preceded(
         tuple((tag("Game "), nom_usize, tag(": "))),
-        separated_list1(tag("; "), parse_cube_set),
+        parse_merged_cube_set,
     )(s)
 }
 
 #[aoc_generator(day2)]
-pub fn generator(input: &str) -> Vec<Vec<CubeSet>> {
+pub fn generator(input: &str) -> Vec<CubeSet> {
     process_input(nom_lines(parse_line))(input)
 }
 
 #[aoc(day2, part1)]
-pub fn part1(inputs: &[Vec<CubeSet>]) -> usize {
+pub fn part1(inputs: &[CubeSet]) -> usize {
     inputs
         .iter()
         .enumerate()
-        .map(|(i, cubes)| {
-            if cubes.iter().all(|o| o.is_valid()) {
-                i + 1
-            } else {
-                0
-            }
-        })
+        .map(|(i, cubes)| if cubes.is_valid() { i + 1 } else { 0 })
         .sum()
 }
 
-fn max(cubes: &[CubeSet]) -> CubeSet {
-    cubes.iter().fold(CubeSet::default(), |acc, x| {
-        let red = acc.red.max(x.red);
-        let green = acc.green.max(x.green);
-        let blue = acc.blue.max(x.blue);
-        CubeSet { red, green, blue }
-    })
-}
-
 #[aoc(day2, part2)]
-pub fn part2(inputs: &[Vec<CubeSet>]) -> usize {
-    inputs.iter().map(|sets| max(sets).product()).sum()
+pub fn part2(inputs: &[CubeSet]) -> usize {
+    inputs.iter().map(|sets| sets.product()).sum()
 }
 
 #[cfg(test)]
