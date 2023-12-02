@@ -1,6 +1,7 @@
 # Advent of Code 2023 - Rust
 
-
+- [Day 1: Trebuchet?!](https://adventofcode.com/2023/day/1)
+   * [solution](src/day01.rs)
 
 See:
 

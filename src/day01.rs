@@ -1,25 +1,15 @@
-use aoc_runner_derive::{aoc, aoc_generator};
+use aoc_runner_derive::aoc;
 
-#[aoc_generator(day1, part1)]
-pub fn generator(input: &str) -> Vec<(u32, u32)> {
-    let to_digit = |o: Option<u8>| u32::from(o.unwrap() - b'0');
-
-    input
-        .lines()
-        .map(|line| {
-            (
-                to_digit(line.bytes().find(|b| b.is_ascii_digit())),
-                to_digit(line.bytes().rev().find(|b| b.is_ascii_digit())),
-            )
-        })
-        .collect()
+#[inline]
+fn to_digit(o: Option<u8>) -> u32 {
+    u32::from(o.unwrap() - b'0')
 }
 
 fn find_from_pos(input: &[u8], pos: usize) -> Option<u32> {
     let input = &input[pos..];
 
     if input[0].is_ascii_digit() {
-        return Some(u32::from(input[0] - b'0'));
+        return Some(to_digit(input.first().copied()));
     }
 
     let end = 3.min(input.len());
@@ -43,7 +33,7 @@ fn find_from_pos_rev(input: &[u8], pos: usize) -> Option<u32> {
     let input = &input[..pos];
 
     if input[input.len() - 1].is_ascii_digit() {
-        return Some(u32::from(input[input.len() - 1] - b'0'));
+        return Some(to_digit(input.last().copied()));
     }
 
     let end = input.len().saturating_sub(3);
@@ -62,8 +52,22 @@ fn find_from_pos_rev(input: &[u8], pos: usize) -> Option<u32> {
     }
 }
 
-#[aoc_generator(day1, part2)]
-pub fn generator_two(input: &str) -> Vec<(u32, u32)> {
+#[aoc(day1, part1)]
+pub fn part1(input: &str) -> u32 {
+    input
+        .lines()
+        .map(|line| {
+            (
+                to_digit(line.bytes().find(|b| b.is_ascii_digit())),
+                to_digit(line.bytes().rev().find(|b| b.is_ascii_digit())),
+            )
+        })
+        .map(|(a, b)| a * 10 + b)
+        .sum()
+}
+
+#[aoc(day1, part2)]
+pub fn part2(input: &str) -> u32 {
     input
         .lines()
         .map(|s| {
@@ -76,17 +80,8 @@ pub fn generator_two(input: &str) -> Vec<(u32, u32)> {
                     .unwrap(),
             )
         })
-        .collect()
-}
-
-#[aoc(day1, part1)]
-pub fn part1(inputs: &[(u32, u32)]) -> u32 {
-    inputs.iter().map(|(a, b)| a * 10 + b).sum()
-}
-
-#[aoc(day1, part2)]
-pub fn part2(inputs: &[(u32, u32)]) -> u32 {
-    inputs.iter().map(|(a, b)| a * 10 + b).sum()
+        .map(|(a, b)| a * 10 + b)
+        .sum()
 }
 
 #[cfg(test)]
@@ -108,19 +103,19 @@ zoneight234
 
     #[test]
     pub fn input_test() {
-        println!("{:?}", generator_two("ddgjgcrssevensix37twooneightgt"));
+        // println!("{:?}", generator_two("ddgjgcrssevensix37twooneightgt"));
 
         // assert_eq!(generator_two(SAMPLE2), Object());
     }
 
     #[test]
     pub fn part1_test() {
-        assert_eq!(part1(&generator(SAMPLE)), 142);
+        assert_eq!(part1(&SAMPLE), 142);
     }
 
     #[test]
     pub fn part2_test() {
-        assert_eq!(part2(&generator_two(SAMPLE2)), 281);
+        assert_eq!(part2(&SAMPLE2), 281);
     }
 
     mod regression {
@@ -134,8 +129,8 @@ zoneight234
             let input = INPUT.trim_end_matches('\n');
             // let output = generator(input);
 
-            assert_eq!(part1(&generator(input)), ANSWERS.0);
-            assert_eq!(part2(&generator_two(input)), ANSWERS.1);
+            assert_eq!(part1(&input), ANSWERS.0);
+            assert_eq!(part2(&input), ANSWERS.1);
         }
     }
 }
