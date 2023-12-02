@@ -2,7 +2,7 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use nom::{
     branch::alt,
     bytes::complete::tag,
-    multi::separated_list1,
+    combinator::value,
     sequence::{pair, preceded, tuple},
     IResult,
 };
@@ -26,24 +26,38 @@ impl CubeSet {
     }
 }
 
-fn parse_color(s: &str) -> IResult<&str, (usize, &str)> {
-    pair(nom_usize, alt((tag(" red"), tag(" green"), tag(" blue"))))(s)
+#[derive(Clone)]
+enum Color {
+    Red,
+    Green,
+    Blue,
+}
+
+fn parse_color(s: &str) -> IResult<&str, (usize, Color)> {
+    pair(
+        nom_usize,
+        alt((
+            value(Color::Red, tag(" red")),
+            value(Color::Green, tag(" green")),
+            value(Color::Blue, tag(" blue")),
+        )),
+    )(s)
 }
 
 fn parse_cube_set(s: &str) -> IResult<&str, CubeSet> {
-    let (s, v) = separated_list1(tag(", "), parse_color)(s)?;
-    assert!(v.len() <= 3);
-    let (mut red, mut green, mut blue) = (0, 0, 0);
-    for (count, color) in v {
-        match color {
-            " red" => red = count,
-            " green" => green = count,
-            " blue" => blue = count,
-            _ => panic!("unknown color"),
-        };
-    }
-
-    Ok((s, CubeSet { red, green, blue }))
+    fold_separated_list0(
+        tag(", "),
+        parse_color,
+        CubeSet::default,
+        |mut acc, (count, color)| {
+            match color {
+                Color::Red => acc.red += count,
+                Color::Green => acc.green += count,
+                Color::Blue => acc.blue += count,
+            };
+            acc
+        },
+    )(s)
 }
 
 fn parse_merged_cube_set(s: &str) -> IResult<&str, CubeSet> {
