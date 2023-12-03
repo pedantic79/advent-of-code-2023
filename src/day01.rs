@@ -81,6 +81,7 @@ pub fn part2(input: &str) -> u32 {
             )
         })
         .map(|(a, b)| a * 10 + b)
+        .inspect(|x| println!("{x}"))
         .sum()
 }
 
@@ -110,12 +111,12 @@ zoneight234
 
     #[test]
     pub fn part1_test() {
-        assert_eq!(part1(&SAMPLE), 142);
+        assert_eq!(part1(SAMPLE), 142);
     }
 
     #[test]
     pub fn part2_test() {
-        assert_eq!(part2(&SAMPLE2), 281);
+        assert_eq!(part2(SAMPLE2), 281);
     }
 
     mod regression {
@@ -129,8 +130,8 @@ zoneight234
             let input = INPUT.trim_end_matches('\n');
             // let output = generator(input);
 
-            assert_eq!(part1(&input), ANSWERS.0);
-            assert_eq!(part2(&input), ANSWERS.1);
+            assert_eq!(part1(input), ANSWERS.0);
+            assert_eq!(part2(input), ANSWERS.1);
         }
     }
 }
