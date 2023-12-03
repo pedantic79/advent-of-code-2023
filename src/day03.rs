@@ -13,19 +13,16 @@ pub fn generator(input: &str) -> (Vec<(u32, bool)>, HashMap<(usize, usize), Vec<
 }
 
 fn area_check(input: &[Vec<u8>], coords: &[(usize, usize)]) -> (bool, Option<(usize, usize)>) {
-    let mut other = false;
-    let mut gear = None;
     for &(r, c) in coords.iter() {
         for (y, x) in neighbors_diag(r, c, input.len(), input[0].len()) {
             let cell = input[y][x];
-            if cell == b'*' {
-                gear = Some((y, x));
+            if cell != b'.' && !cell.is_ascii_digit() {
+                return (true, Some((y, x)).filter(|_| cell == b'*'));
             }
-            other |= cell != b'.' && !cell.is_ascii_digit();
         }
     }
 
-    (other, gear)
+    (false, None)
 }
 
 fn parse_int(num: &[u8]) -> u32 {
