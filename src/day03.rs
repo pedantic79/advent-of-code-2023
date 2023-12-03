@@ -28,6 +28,11 @@ fn area_check(input: &[Vec<u8>], coords: &[(usize, usize)]) -> (bool, Option<(us
     (other, gear)
 }
 
+fn parse_int(num: &[u8]) -> u32 {
+    num.iter()
+        .fold(0, |acc, digit| acc * 10 + u32::from(*digit - b'0'))
+}
+
 fn parse_numbers(
     input: Vec<Vec<u8>>,
     gears: &mut HashMap<(usize, usize), Vec<u32>>,
@@ -43,10 +48,10 @@ fn parse_numbers(
                 num.push(b);
                 check.push((row, col));
             } else if !num.is_empty() {
-                let number = unsafe { String::from_utf8_unchecked(num) }.parse().unwrap();
-                num = vec![];
+                let number: u32 = parse_int(&num);
                 let (surround, gear) = area_check(&input, &check);
                 res.push((number, surround));
+                num.clear();
                 check.clear();
                 if let Some(co) = gear {
                     gears.entry(co).or_default().push(number);
@@ -55,9 +60,10 @@ fn parse_numbers(
         }
 
         if !num.is_empty() {
-            let number = unsafe { String::from_utf8_unchecked(num) }.parse().unwrap();
+            let number: u32 = parse_int(&num);
             let (surround, gear) = area_check(&input, &check);
             res.push((number, surround));
+            num.clear();
             check.clear();
             if let Some(co) = gear {
                 gears.entry(co).or_default().push(number);
