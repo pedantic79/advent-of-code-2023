@@ -3,14 +3,13 @@ use aoc_runner_derive::{aoc, aoc_generator};
 
 use crate::common::utils::neighbors_diag;
 
-#[allow(clippy::type_complexity)]
 #[aoc_generator(day3)]
-pub fn generator(input: &str) -> HashMap<(usize, usize), Vec<u32>> {
+pub fn generator(input: &str) -> HashMap<Option<(usize, usize)>, Vec<u32>> {
     parse_numbers(input.lines().map(|line| line.bytes().collect()).collect())
 }
 
-fn parse_numbers(input: Vec<Vec<u8>>) -> HashMap<(usize, usize), Vec<u32>> {
-    let mut gears: std::collections::HashMap<(usize, usize), Vec<u32>, ahash::RandomState> =
+fn parse_numbers(input: Vec<Vec<u8>>) -> HashMap<Option<(usize, usize)>, Vec<u32>> {
+    let mut gears: std::collections::HashMap<Option<(usize, usize)>, Vec<u32>, ahash::RandomState> =
         HashMap::new();
 
     for (row, line) in input.iter().enumerate() {
@@ -37,17 +36,14 @@ fn process(
     input: &[Vec<u8>],
     num: &mut Vec<u8>,
     check: &mut Vec<(usize, usize)>,
-    gears: &mut HashMap<(usize, usize), Vec<u32>>,
+    gears: &mut HashMap<Option<(usize, usize)>, Vec<u32>>,
 ) {
     let number: u32 = parse_int(num);
     let (surround, gear) = area_check(input, check);
     if let Some(co) = gear {
-        gears.entry(co).or_default().push(number);
+        gears.entry(Some(co)).or_default().push(number);
     } else if surround {
-        gears
-            .entry((usize::MAX, usize::MAX))
-            .or_default()
-            .push(number);
+        gears.entry(None).or_default().push(number);
     }
 
     num.clear();
@@ -73,15 +69,15 @@ fn area_check(input: &[Vec<u8>], coords: &[(usize, usize)]) -> (bool, Option<(us
 }
 
 #[aoc(day3, part1)]
-pub fn part1(inputs: &HashMap<(usize, usize), Vec<u32>>) -> u32 {
+pub fn part1(inputs: &HashMap<Option<(usize, usize)>, Vec<u32>>) -> u32 {
     inputs.values().flatten().sum()
 }
 
 #[aoc(day3, part2)]
-pub fn part2(inputs: &HashMap<(usize, usize), Vec<u32>>) -> u32 {
+pub fn part2(inputs: &HashMap<Option<(usize, usize)>, Vec<u32>>) -> u32 {
     inputs
         .iter()
-        .filter(|x| x.0 .0 != usize::MAX && x.1.len() > 1)
+        .filter(|x| x.0.is_some() && x.1.len() > 1)
         .map(|x| x.1.iter().product::<u32>())
         .sum()
 }
