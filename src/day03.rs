@@ -6,9 +6,9 @@ use crate::common::utils::neighbors_diag;
 #[allow(clippy::type_complexity)]
 #[aoc_generator(day3)]
 pub fn generator(input: &str) -> (Vec<(u32, bool)>, HashMap<(usize, usize), Vec<u32>>) {
-    let v: Vec<Vec<_>> = input.lines().map(|line| line.bytes().collect()).collect();
+    let v = input.lines().map(|line| line.bytes().collect()).collect();
     let mut hm = HashMap::new();
-    let x = parse_numbers(&v, &mut hm);
+    let x = parse_numbers(v, &mut hm);
     (x, hm)
 }
 
@@ -29,7 +29,7 @@ fn area_check(input: &[Vec<u8>], coords: &[(usize, usize)]) -> (bool, Option<(us
 }
 
 fn parse_numbers(
-    input: &[Vec<u8>],
+    input: Vec<Vec<u8>>,
     gears: &mut HashMap<(usize, usize), Vec<u32>>,
 ) -> Vec<(u32, bool)> {
     let mut res = vec![];
@@ -45,7 +45,7 @@ fn parse_numbers(
             } else if !num.is_empty() {
                 let number = unsafe { String::from_utf8_unchecked(num) }.parse().unwrap();
                 num = vec![];
-                let (surround, gear) = area_check(input, &check);
+                let (surround, gear) = area_check(&input, &check);
                 res.push((number, surround));
                 check.clear();
                 if let Some(co) = gear {
@@ -56,9 +56,8 @@ fn parse_numbers(
 
         if !num.is_empty() {
             let number = unsafe { String::from_utf8_unchecked(num) }.parse().unwrap();
-            let (surround, gear) = area_check(input, &check);
+            let (surround, gear) = area_check(&input, &check);
             res.push((number, surround));
-            check.clear();
             check.clear();
             if let Some(co) = gear {
                 gears.entry(co).or_default().push(number);
