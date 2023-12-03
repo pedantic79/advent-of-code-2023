@@ -5,11 +5,58 @@ use crate::common::utils::neighbors_diag;
 
 #[allow(clippy::type_complexity)]
 #[aoc_generator(day3)]
-pub fn generator(input: &str) -> (Vec<(u32, bool)>, HashMap<(usize, usize), Vec<u32>>) {
-    let v = input.lines().map(|line| line.bytes().collect()).collect();
-    let mut hm = HashMap::new();
-    let x = parse_numbers(v, &mut hm);
-    (x, hm)
+pub fn generator(input: &str) -> HashMap<(usize, usize), Vec<u32>> {
+    parse_numbers(input.lines().map(|line| line.bytes().collect()).collect())
+}
+
+fn parse_numbers(input: Vec<Vec<u8>>) -> HashMap<(usize, usize), Vec<u32>> {
+    let mut gears: std::collections::HashMap<(usize, usize), Vec<u32>, ahash::RandomState> =
+        HashMap::new();
+
+    for (row, line) in input.iter().enumerate() {
+        let mut num = vec![];
+        let mut check = vec![];
+
+        for (col, &b) in line.iter().enumerate() {
+            if b.is_ascii_digit() {
+                num.push(b);
+                check.push((row, col));
+            } else if !num.is_empty() {
+                process(&input, &mut num, &mut check, &mut gears);
+            }
+        }
+
+        if !num.is_empty() {
+            process(&input, &mut num, &mut check, &mut gears);
+        }
+    }
+    gears
+}
+
+fn process(
+    input: &[Vec<u8>],
+    num: &mut Vec<u8>,
+    check: &mut Vec<(usize, usize)>,
+    gears: &mut HashMap<(usize, usize), Vec<u32>>,
+) {
+    let number: u32 = parse_int(num);
+    let (surround, gear) = area_check(input, check);
+    if let Some(co) = gear {
+        gears.entry(co).or_default().push(number);
+    } else if surround {
+        gears
+            .entry((usize::MAX, usize::MAX))
+            .or_default()
+            .push(number);
+    }
+
+    num.clear();
+    check.clear();
+}
+
+fn parse_int(num: &[u8]) -> u32 {
+    num.iter()
+        .fold(0, |acc, digit| acc * 10 + u32::from(*digit - b'0'))
 }
 
 fn area_check(input: &[Vec<u8>], coords: &[(usize, usize)]) -> (bool, Option<(usize, usize)>) {
@@ -25,71 +72,17 @@ fn area_check(input: &[Vec<u8>], coords: &[(usize, usize)]) -> (bool, Option<(us
     (false, None)
 }
 
-fn parse_int(num: &[u8]) -> u32 {
-    num.iter()
-        .fold(0, |acc, digit| acc * 10 + u32::from(*digit - b'0'))
-}
-
-fn parse_numbers(
-    input: Vec<Vec<u8>>,
-    gears: &mut HashMap<(usize, usize), Vec<u32>>,
-) -> Vec<(u32, bool)> {
-    let mut res = vec![];
-
-    for (row, line) in input.iter().enumerate() {
-        let mut num = vec![];
-        let mut check = vec![];
-
-        for (col, &b) in line.iter().enumerate() {
-            if b.is_ascii_digit() {
-                num.push(b);
-                check.push((row, col));
-            } else if !num.is_empty() {
-                let number: u32 = parse_int(&num);
-                let (surround, gear) = area_check(&input, &check);
-                res.push((number, surround));
-                num.clear();
-                check.clear();
-                if let Some(co) = gear {
-                    gears.entry(co).or_default().push(number);
-                }
-            }
-        }
-
-        if !num.is_empty() {
-            let number: u32 = parse_int(&num);
-            let (surround, gear) = area_check(&input, &check);
-            res.push((number, surround));
-            num.clear();
-            check.clear();
-            if let Some(co) = gear {
-                gears.entry(co).or_default().push(number);
-            }
-        }
-    }
-    res
-}
-
-#[allow(clippy::type_complexity)]
 #[aoc(day3, part1)]
-pub fn part1(inputs: &(Vec<(u32, bool)>, HashMap<(usize, usize), Vec<u32>>)) -> u32 {
-    inputs
-        .0
-        .iter()
-        .filter(|x| x.1)
-        .map(|x| x.0)
-        // .inspect(|x| println!("{x}"))
-        .sum()
+pub fn part1(inputs: &HashMap<(usize, usize), Vec<u32>>) -> u32 {
+    inputs.values().flatten().sum()
 }
 
-#[allow(clippy::type_complexity)]
 #[aoc(day3, part2)]
-pub fn part2(inputs: &(Vec<(u32, bool)>, HashMap<(usize, usize), Vec<u32>>)) -> u32 {
+pub fn part2(inputs: &HashMap<(usize, usize), Vec<u32>>) -> u32 {
     inputs
-        .1
-        .values()
-        .filter(|x| x.len() > 1)
-        .map(|x| x.iter().product::<u32>())
+        .iter()
+        .filter(|x| x.0 .0 != usize::MAX && x.1.len() > 1)
+        .map(|x| x.1.iter().product::<u32>())
         .sum()
 }
 
