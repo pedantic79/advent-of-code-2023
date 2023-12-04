@@ -1,14 +1,14 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use bit_set::BitSet;
-use nom::{bytes::complete::tag, character::complete::space1, IResult};
+use nom::{bytes::complete::tag, character::complete::space1, sequence::delimited, IResult};
 
-use crate::common::nom::{fold_separated_list0, nom_lines, nom_u8, nom_usize, process_input};
+use crate::common::nom::{fold_separated_list0, nom_lines, nom_usize, process_input};
 
 fn parse_nums(s: &str) -> IResult<&str, BitSet> {
     fold_separated_list0(
         space1,
         nom_usize,
-        || BitSet::with_capacity(256),
+        || BitSet::with_capacity(128),
         |mut acc, n| {
             acc.insert(n);
             acc
@@ -16,27 +16,25 @@ fn parse_nums(s: &str) -> IResult<&str, BitSet> {
     )(s)
 }
 
-fn parse(s: &str) -> IResult<&str, (BitSet, BitSet)> {
+fn parse(s: &str) -> IResult<&str, usize> {
     let (s, _) = tag("Card")(s)?;
     let (s, _) = space1(s)?;
-    let (s, _) = nom_u8(s)?;
+    let (s, _) = nom_usize(s)?;
     let (s, _) = tag(":")(s)?;
     let (s, _) = space1(s)?;
     let (s, left) = parse_nums(s)?;
-    let (s, _) = tag(" |")(s)?;
-    let (s, _) = space1(s)?;
+    let (s, _) = delimited(space1, tag("|"), space1)(s)?;
     let (s, right) = parse_nums(s)?;
 
-    Ok((s, (left, right)))
+    Ok((s, left.intersection(&right).count()))
 }
 
 #[aoc_generator(day4)]
-pub fn generator(input: &str) -> Vec<(BitSet, BitSet)> {
+pub fn generator(input: &str) -> Vec<usize> {
     process_input(nom_lines(parse))(input)
 }
 
-fn check_part1(winners: &BitSet, numbers: &BitSet) -> usize {
-    let n = winners.intersection(numbers).count();
+fn check_part1(n: usize) -> usize {
     if n == 0 {
         0
     } else {
@@ -45,17 +43,16 @@ fn check_part1(winners: &BitSet, numbers: &BitSet) -> usize {
 }
 
 #[aoc(day4, part1)]
-pub fn part1(inputs: &[(BitSet, BitSet)]) -> usize {
-    inputs.iter().map(|(a, b)| check_part1(a, b)).sum()
+pub fn part1(inputs: &[usize]) -> usize {
+    inputs.iter().map(|a| check_part1(*a)).sum()
 }
 
 #[aoc(day4, part2)]
-pub fn part2(inputs: &[(BitSet, BitSet)]) -> usize {
+pub fn part2(inputs: &[usize]) -> usize {
     let mut cards = vec![1; inputs.len()];
 
-    for (i, c) in inputs.iter().enumerate() {
+    for (i, &count) in inputs.iter().enumerate() {
         let multipler = cards[i];
-        let count = c.0.intersection(&c.1).count();
 
         for n in 0..count {
             cards[i + 1 + n] += multipler;
