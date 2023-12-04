@@ -24,9 +24,15 @@ fn parse(s: &str) -> IResult<&str, usize> {
     let (s, _) = space1(s)?;
     let (s, left) = parse_nums(s)?;
     let (s, _) = delimited(space1, tag("|"), space1)(s)?;
-    let (s, right) = parse_nums(s)?;
 
-    Ok((s, left.intersection(&right).count()))
+    let (s, count) = fold_separated_list0(
+        space1,
+        nom_usize,
+        || 0,
+        |acc, n| acc + usize::from(left.contains(n)),
+    )(s)?;
+
+    Ok((s, count))
 }
 
 #[aoc_generator(day4)]
