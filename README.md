@@ -6,6 +6,8 @@
   - [solution](src/day02.rs)
 - [Day 3: Gear Ratios](https://adventofcode.com/2023/day/3)
   - [solution](src/day03.rs)
+- [Day 4: Scratchcards](https://adventofcode.com/2023/day/4)
+  - [solution](src/day04.rs)
 <!-- Insert before -->
 
 See:

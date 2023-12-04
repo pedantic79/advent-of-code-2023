@@ -9,8 +9,7 @@ pub fn generator(input: &str) -> HashMap<Option<(usize, usize)>, Vec<u32>> {
 }
 
 fn parse_numbers(input: Vec<Vec<u8>>) -> HashMap<Option<(usize, usize)>, Vec<u32>> {
-    let mut gears: std::collections::HashMap<Option<(usize, usize)>, Vec<u32>, ahash::RandomState> =
-        HashMap::new();
+    let mut gears = HashMap::new();
 
     for (row, line) in input.iter().enumerate() {
         let mut num = vec![];
