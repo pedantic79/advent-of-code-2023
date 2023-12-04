@@ -1,17 +1,22 @@
-use ahash::{HashSet, HashSetExt};
 use aoc_runner_derive::{aoc, aoc_generator};
+use bit_set::BitSet;
 use nom::{bytes::complete::tag, character::complete::space1, IResult};
 
-use crate::common::nom::{fold_separated_list0, nom_lines, nom_u8, process_input};
+use crate::common::nom::{fold_separated_list0, nom_lines, nom_u8, nom_usize, process_input};
 
-fn parse_nums(s: &str) -> IResult<&str, HashSet<u8>> {
-    fold_separated_list0(space1, nom_u8, HashSet::new, |mut acc, n| {
-        acc.insert(n);
-        acc
-    })(s)
+fn parse_nums(s: &str) -> IResult<&str, BitSet> {
+    fold_separated_list0(
+        space1,
+        nom_usize,
+        || BitSet::with_capacity(256),
+        |mut acc, n| {
+            acc.insert(n);
+            acc
+        },
+    )(s)
 }
 
-fn parse(s: &str) -> IResult<&str, (HashSet<u8>, HashSet<u8>)> {
+fn parse(s: &str) -> IResult<&str, (BitSet, BitSet)> {
     let (s, _) = tag("Card")(s)?;
     let (s, _) = space1(s)?;
     let (s, _) = nom_u8(s)?;
@@ -26,11 +31,11 @@ fn parse(s: &str) -> IResult<&str, (HashSet<u8>, HashSet<u8>)> {
 }
 
 #[aoc_generator(day4)]
-pub fn generator(input: &str) -> Vec<(HashSet<u8>, HashSet<u8>)> {
+pub fn generator(input: &str) -> Vec<(BitSet, BitSet)> {
     process_input(nom_lines(parse))(input)
 }
 
-fn check_part1(winners: &HashSet<u8>, numbers: &HashSet<u8>) -> usize {
+fn check_part1(winners: &BitSet, numbers: &BitSet) -> usize {
     let n = winners.intersection(numbers).count();
     if n == 0 {
         0
@@ -40,12 +45,12 @@ fn check_part1(winners: &HashSet<u8>, numbers: &HashSet<u8>) -> usize {
 }
 
 #[aoc(day4, part1)]
-pub fn part1(inputs: &[(HashSet<u8>, HashSet<u8>)]) -> usize {
+pub fn part1(inputs: &[(BitSet, BitSet)]) -> usize {
     inputs.iter().map(|(a, b)| check_part1(a, b)).sum()
 }
 
 #[aoc(day4, part2)]
-pub fn part2(inputs: &[(HashSet<u8>, HashSet<u8>)]) -> usize {
+pub fn part2(inputs: &[(BitSet, BitSet)]) -> usize {
     let mut cards = vec![1; inputs.len()];
 
     for (i, c) in inputs.iter().enumerate() {
