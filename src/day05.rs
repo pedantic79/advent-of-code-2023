@@ -1,3 +1,5 @@
+use std::ops::Range;
+
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 use rayon::{iter::ParallelIterator, slice::ParallelSlice};
@@ -6,18 +8,15 @@ use crate::common::utils::parse_split;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct IndividualMapper {
-    source: [usize; 2],
-    destination: [usize; 2],
+    source: Range<usize>,
+    destination: usize,
 }
 
 impl IndividualMapper {
     fn contains(&self, input: usize) -> Option<usize> {
-        if self.source[0] <= input && input < self.source[1] {
-            let diff = input - self.source[0];
-            Some(self.destination[0] + diff)
-        } else {
-            None
-        }
+        self.source
+            .contains(&input)
+            .then_some(self.destination + input.saturating_sub(self.source.start))
     }
 }
 
@@ -35,9 +34,11 @@ fn parse(group: &str) -> GroupMapper {
             .collect_tuple()
             .unwrap();
 
+        let source = b..(b + c);
+
         mappers.push(IndividualMapper {
-            source: [b, b + c],
-            destination: [a, a + c],
+            source,
+            destination: a,
         });
     }
     GroupMapper { mappers }
@@ -55,28 +56,26 @@ pub fn generator(input: &str) -> (Vec<usize>, Vec<GroupMapper>) {
     (seeds, gm)
 }
 
+fn solve(seeds: impl IntoIterator<Item = usize>, mappers: &[GroupMapper]) -> usize {
+    seeds
+        .into_iter()
+        .map(|seed| {
+            mappers.iter().fold(seed, |seed, gm| {
+                gm.mappers
+                    .iter()
+                    .find_map(|mapper| mapper.contains(seed))
+                    .unwrap_or(seed)
+            })
+        })
+        .min()
+        .unwrap()
+}
+
 #[aoc(day5, part1)]
 pub fn part1((seeds, mappers): &(Vec<usize>, Vec<GroupMapper>)) -> usize {
     solve(seeds.iter().copied(), mappers)
 }
 
-fn solve(seeds: impl IntoIterator<Item = usize>, mappers: &Vec<GroupMapper>) -> usize {
-    seeds
-        .into_iter()
-        .map(|seed| {
-            let mut seed = seed;
-            for gm in mappers {
-                seed = gm
-                    .mappers
-                    .iter()
-                    .find_map(|mapper| mapper.contains(seed))
-                    .unwrap_or(seed);
-            }
-            seed
-        })
-        .min()
-        .unwrap()
-}
 #[aoc(day5, part2)]
 pub fn part2((seeds_range, mappers): &(Vec<usize>, Vec<GroupMapper>)) -> usize {
     seeds_range
@@ -134,8 +133,8 @@ humidity-to-location map:
     #[test]
     pub fn mapper() {
         let mapper = IndividualMapper {
-            source: [50, 50 + 48],
-            destination: [52, 52 + 48],
+            source: 50..(50 + 48),
+            destination: 52,
         };
 
         assert_eq!(mapper.contains(79), Some(81));
