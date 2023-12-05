@@ -8,6 +8,8 @@
   - [solution](src/day03.rs)
 - [Day 4: Scratchcards](https://adventofcode.com/2023/day/4)
   - [solution](src/day04.rs)
+- [Day 5: If You Give A Seed A Fertilizer](https://adventofcode.com/2023/day/5)
+  - [solution](src/day05.rs)
 <!-- Insert before -->
 
 See:
