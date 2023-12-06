@@ -6,6 +6,7 @@ use nom::{
     multi::separated_list1,
     IResult,
 };
+use num::integer::sqrt;
 
 use crate::common::nom::{fold_separated_list0, nom_lines, nom_usize, process_input};
 
@@ -46,10 +47,16 @@ pub fn generator_p2(input: &str) -> Vec<usize> {
     process_input(nom_lines(parse_number))(input)
 }
 
-fn ways(time: usize, distance: usize) -> usize {
-    (0..time)
-        .filter(|speed| speed * (time - speed) > distance)
-        .count()
+fn ways(time: usize, dist: usize) -> usize {
+    let dist_f = |x| x * time - x * x;
+
+    let pyth = sqrt(time * time - 4 * dist);
+    let root1 = (time - pyth) / 2;
+    let root2 = (time + pyth) / 2;
+
+    let a = (root1 - 1..root1 + 2).find(|x| dist_f(*x) > dist).unwrap();
+    let b = (root2 - 1..root2 + 2).find(|x| dist_f(*x) <= dist).unwrap();
+    b - a
 }
 
 #[aoc(day6, part1)]

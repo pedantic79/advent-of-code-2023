@@ -10,7 +10,7 @@
   - [solution](src/day04.rs)
 - [Day 5: If You Give A Seed A Fertilizer](https://adventofcode.com/2023/day/5)
   - [solution](src/day05.rs)
-- [Day 6:](https://adventofcode.com/2023/day/6)
+- [Day 6: Wait For It](https://adventofcode.com/2023/day/6)
   - [solution](src/day06.rs)
 <!-- Insert before -->
 
