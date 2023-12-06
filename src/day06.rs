@@ -9,9 +9,6 @@ use nom::{
 
 use crate::common::nom::{fold_separated_list0, nom_lines, nom_usize, process_input};
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct Object {}
-
 fn parse_line(s: &str) -> IResult<&str, Vec<usize>> {
     let (s, _) = take_until(":")(s)?;
     let (s, _) = tag(":")(s)?;
