@@ -39,12 +39,14 @@ fn parse_number(s: &str) -> IResult<&str, usize> {
     )(s)
 }
 
-#[aoc_generator(day6)]
-pub fn generator(input: &str) -> (Vec<Vec<usize>>, Vec<usize>) {
-    (
-        process_input(nom_lines(parse_line))(input),
-        process_input(nom_lines(parse_number))(input),
-    )
+#[aoc_generator(day6, part1)]
+pub fn generator_p1(input: &str) -> Vec<Vec<usize>> {
+    process_input(nom_lines(parse_line))(input)
+}
+
+#[aoc_generator(day6, part2)]
+pub fn generator_p2(input: &str) -> Vec<usize> {
+    process_input(nom_lines(parse_number))(input)
 }
 
 fn ways(time: usize, distance: usize) -> usize {
@@ -54,17 +56,17 @@ fn ways(time: usize, distance: usize) -> usize {
 }
 
 #[aoc(day6, part1)]
-pub fn part1(inputs: &(Vec<Vec<usize>>, Vec<usize>)) -> usize {
-    inputs.0[0]
+pub fn part1(inputs: &[Vec<usize>]) -> usize {
+    inputs[0]
         .iter()
-        .zip(&inputs.0[1])
+        .zip(&inputs[1])
         .map(|(x, y)| ways(*x, *y))
         .product()
 }
 
 #[aoc(day6, part2)]
-pub fn part2(inputs: &(Vec<Vec<usize>>, Vec<usize>)) -> usize {
-    ways(inputs.1[0], inputs.1[1])
+pub fn part2(inputs: &[usize]) -> usize {
+    ways(inputs[0], inputs[1])
 }
 
 #[cfg(test)]
@@ -76,19 +78,19 @@ Distance:  9  40  200";
 
     #[test]
     pub fn input_test() {
-        println!("{:?}", generator(SAMPLE));
+        println!("{:?}", generator_p1(SAMPLE));
 
         // assert_eq!(generator(SAMPLE), Object());
     }
 
     #[test]
     pub fn part1_test() {
-        assert_eq!(part1(&generator(SAMPLE)), 288);
+        assert_eq!(part1(&generator_p1(SAMPLE)), 288);
     }
 
     #[test]
     pub fn part2_test() {
-        assert_eq!(part2(&generator(SAMPLE)), 71503);
+        assert_eq!(part2(&generator_p2(SAMPLE)), 71503);
     }
 
     mod regression {
@@ -100,10 +102,11 @@ Distance:  9  40  200";
         #[test]
         pub fn test() {
             let input = INPUT.trim_end_matches('\n');
-            let output = generator(input);
+            let output1 = generator_p1(input);
+            let output2 = generator_p2(input);
 
-            assert_eq!(part1(&output), ANSWERS.0);
-            assert_eq!(part2(&output), ANSWERS.1);
+            assert_eq!(part1(&output1), ANSWERS.0);
+            assert_eq!(part2(&output2), ANSWERS.1);
         }
     }
 }
