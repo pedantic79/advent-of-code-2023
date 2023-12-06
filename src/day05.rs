@@ -1,8 +1,10 @@
-use std::ops::Range;
+use std::{
+    cmp::{max, min},
+    ops::Range,
+};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
-use rayon::{iter::ParallelIterator, slice::ParallelSlice};
 
 use crate::common::utils::parse_split;
 
@@ -23,6 +25,44 @@ impl IndividualMapper {
 #[derive(Debug, Clone)]
 pub struct GroupMapper {
     mappers: Vec<IndividualMapper>,
+}
+
+impl GroupMapper {
+    fn apply_range(
+        &self,
+        input: &mut Vec<Range<usize>>,
+        temp: &mut Vec<Range<usize>>,
+        output: &mut Vec<Range<usize>>,
+    ) {
+        for mapper in &self.mappers {
+            while let Some(range) = input.pop() {
+                let before = range.start..min(range.end, mapper.source.start);
+                let inter = (
+                    max(range.start, mapper.source.start),
+                    min(mapper.source.end, range.end),
+                );
+                let after = max(mapper.source.end, range.start)..range.end;
+
+                if before.end > before.start {
+                    temp.push(before);
+                }
+
+                if inter.1 > inter.0 {
+                    output.push(
+                        (inter.0 - mapper.source.start + mapper.destination)
+                            ..(inter.1 - mapper.source.start + mapper.destination),
+                    );
+                }
+
+                if after.end > after.start {
+                    temp.push(after)
+                }
+            }
+            std::mem::swap(input, temp);
+        }
+
+        output.append(input);
+    }
 }
 
 fn parse(group: &str) -> GroupMapper {
@@ -78,11 +118,31 @@ pub fn part1((seeds, mappers): &(Vec<usize>, Vec<GroupMapper>)) -> usize {
 
 #[aoc(day5, part2)]
 pub fn part2((seeds_range, mappers): &(Vec<usize>, Vec<GroupMapper>)) -> usize {
+    let mut temp = vec![];
+    let mut output = vec![];
+    let mut input = vec![];
+
     seeds_range
-        .par_chunks(2)
-        .map(|x| solve(x[0]..(x[0] + x[1]), mappers))
+        .chunks(2)
+        .map(|pair| {
+            input.push(pair[0]..(pair[0] + pair[1]));
+            for m in mappers {
+                m.apply_range(&mut input, &mut temp, &mut output);
+                std::mem::swap(&mut input, &mut output);
+            }
+
+            let min = input.iter().map(|x| x.start).min().unwrap();
+            input.clear();
+            min
+        })
         .min()
         .unwrap()
+
+    // seeds_range
+    //     .par_chunks(2)
+    //     .map(|x| solve(x[0]..(x[0] + x[1]), mappers))
+    //     .min()
+    //     .unwrap()
 }
 
 #[cfg(test)]
@@ -165,7 +225,7 @@ humidity-to-location map:
             let output = generator(input);
 
             assert_eq!(part1(&output), ANSWERS.0);
-            // assert_eq!(part2(&output), ANSWERS.1);
+            assert_eq!(part2(&output), ANSWERS.1);
         }
     }
 }
