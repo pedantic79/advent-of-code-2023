@@ -4,9 +4,16 @@ use std::{
 };
 
 use aoc_runner_derive::{aoc, aoc_generator};
-use itertools::Itertools;
+use nom::{
+    bytes::complete::{tag, take_until},
+    character::complete::space1,
+    combinator::map,
+    multi::separated_list1,
+    sequence::tuple,
+    IResult,
+};
 
-use crate::common::utils::parse_split;
+use crate::common::nom::{nom_lines, nom_usize, process_input};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct IndividualMapper {
@@ -65,33 +72,34 @@ impl GroupMapper {
     }
 }
 
-fn parse(group: &str) -> GroupMapper {
-    let mut mappers = vec![];
-    for line in group.lines().skip(1) {
-        let (a, b, c) = line
-            .split(' ')
-            .map(|x| x.parse::<usize>().unwrap())
-            .collect_tuple()
-            .unwrap();
-
-        let source = b..(b + c);
-
-        mappers.push(IndividualMapper {
-            source,
+fn parse_mapper(s: &str) -> IResult<&str, IndividualMapper> {
+    map(
+        tuple((nom_usize, space1, nom_usize, space1, nom_usize)),
+        |(a, _, b, _, c)| IndividualMapper {
+            source: b..(b + c),
             destination: a,
-        });
-    }
-    GroupMapper { mappers }
+        },
+    )(s)
+}
+
+fn parse(s: &str) -> IResult<&str, GroupMapper> {
+    let (s, _) = take_until("\n")(s)?;
+    let (s, _) = tag("\n")(s)?;
+    map(nom_lines(parse_mapper), |mappers| GroupMapper { mappers })(s)
+}
+
+fn parse_seed(s: &str) -> IResult<&str, Vec<usize>> {
+    let (s, _) = take_until(": ")(s)?;
+    let (s, _) = tag(": ")(s)?;
+    separated_list1(space1, nom_usize)(s)
 }
 
 #[aoc_generator(day5)]
 pub fn generator(input: &str) -> (Vec<usize>, Vec<GroupMapper>) {
     let mut groups = input.split("\n\n");
 
-    let (_, seeds_s) = groups.next().unwrap().split_once(':').unwrap();
-    let seeds = parse_split(seeds_s.trim(), ' ');
-
-    let gm = groups.map(parse).collect();
+    let seeds = process_input(parse_seed)(groups.next().unwrap());
+    let gm = groups.map(process_input(parse)).collect();
 
     (seeds, gm)
 }
