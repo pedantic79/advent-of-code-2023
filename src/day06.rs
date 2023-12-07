@@ -48,15 +48,14 @@ pub fn generator_p2(input: &str) -> Vec<usize> {
 }
 
 fn ways(time: usize, dist: usize) -> usize {
-    let dist_f = |x| x * time - x * x;
-
     let pyth = sqrt(time * time - 4 * dist);
-    let root1 = (time - pyth) / 2;
-    let root2 = (time + pyth) / 2;
+    let r0 = (time - pyth) / 2;
+    let r1 = (time + pyth) / 2;
 
-    let a = (root1 - 1..root1 + 2).find(|x| dist_f(*x) > dist).unwrap();
-    let b = (root2 - 1..root2 + 2).find(|x| dist_f(*x) <= dist).unwrap();
-    b - a
+    let r0 = r0 + usize::from(r0 * (time - r0) <= dist);
+    let r1 = r1 - usize::from(r1 * (time - r1) <= dist);
+
+    r1 - r0 + 1
 }
 
 #[aoc(day6, part1)]
