@@ -24,7 +24,7 @@ pub enum HandTypes {
     High,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Hand {
     cards: Vec<HandValue>,
     value: usize,
@@ -32,13 +32,13 @@ pub struct Hand {
 
 impl Hand {
     fn classify(&self, joker: u8) -> HandTypes {
+        let jokers = self.cards.iter().filter(|x| x.0 == joker).count();
         let mut cards: Vec<HandValue> = self
             .cards
             .iter()
             .filter(|x| x.0 != joker)
             .copied()
             .collect();
-        let jokers = self.cards.iter().filter(|x| x.0 == joker).count();
 
         cards.sort_by_key(|&x| x);
         let mut data_grouped: Vec<Vec<HandValue>> = Vec::new();
@@ -51,6 +51,7 @@ impl Hand {
         let cards = data_grouped;
 
         if cards.is_empty() {
+            // all hands are jokers
             return HandTypes::Five;
         }
         match cards[0].len() + jokers {
@@ -65,92 +66,80 @@ impl Hand {
         }
     }
 
+    fn cards_compare(s: &[HandValue], other: &[HandValue], joker: bool) -> Ordering {
+        for (a, b) in s.iter().zip(other.iter()) {
+            let a = if joker && a.0 == 11 { Reverse(1) } else { *a };
+            let b = if joker && b.0 == 11 { Reverse(1) } else { *b };
+
+            let c = a.cmp(&b);
+            if c != Ordering::Equal {
+                return c;
+            }
+        }
+        Ordering::Equal
+    }
+
     fn compare(&self, other: &Self, joker: u8) -> Ordering {
         other
             .classify(joker)
             .cmp(&self.classify(joker))
-            .then_with(|| other.cards.cmp(&self.cards))
+            .then_with(|| Self::cards_compare(&other.cards, &self.cards, joker == 11))
     }
 }
 
-fn parse_card(part2: bool) -> impl FnMut(&str) -> IResult<&str, HandValue> {
-    move |s: &str| {
-        map(one_of("23456789TJQKA"), |c: char| {
-            Reverse(match c {
-                '2'..='9' => c as u8 - b'0',
-                'T' => 10,
-                'J' => {
-                    if part2 {
-                        1
-                    } else {
-                        11
-                    }
-                }
-                'Q' => 12,
-                'K' => 13,
-                'A' => 14,
-                _ => panic!("unknown symbol"),
-            })
-        })(s)
-    }
+fn parse_card(s: &str) -> IResult<&str, HandValue> {
+    map(one_of("23456789TJQKA"), |c: char| {
+        Reverse(match c {
+            '2'..='9' => c as u8 - b'0',
+            'T' => 10,
+            'J' => 11,
+            'Q' => 12,
+            'K' => 13,
+            'A' => 14,
+            _ => panic!("unknown symbol"),
+        })
+    })(s)
 }
 
-fn parse_hand(p2: bool) -> impl FnMut(&str) -> IResult<&str, Vec<HandValue>> {
-    move |s: &str| {
-        map(
-            tuple((
-                parse_card(p2),
-                parse_card(p2),
-                parse_card(p2),
-                parse_card(p2),
-                parse_card(p2),
-            )),
-            |x| vec![x.0, x.1, x.2, x.3, x.4],
-        )(s)
-    }
+fn parse_hand(s: &str) -> IResult<&str, Vec<HandValue>> {
+    map(
+        tuple((parse_card, parse_card, parse_card, parse_card, parse_card)),
+        |x| vec![x.0, x.1, x.2, x.3, x.4],
+    )(s)
 }
 
-fn parse_line(p2: bool) -> impl FnMut(&str) -> IResult<&str, Hand> {
-    move |s: &str| {
-        let (s, cards) = parse_hand(p2)(s)?;
-        let (s, _) = space1(s)?;
-        let (s, value) = nom_usize(s)?;
-        Ok((s, Hand { cards, value }))
-    }
+fn parse_line(s: &str) -> IResult<&str, Hand> {
+    let (s, cards) = parse_hand(s)?;
+    let (s, _) = space1(s)?;
+    let (s, value) = nom_usize(s)?;
+    Ok((s, Hand { cards, value }))
 }
 
-fn generator<const JOKER: u8>(input: &str) -> Vec<Hand> {
-    let mut v = process_input(nom_lines(parse_line(JOKER == 1)))(input);
-    v.sort_by(|s, other| s.compare(other, JOKER));
-    v
+#[aoc_generator(day7)]
+fn generator(input: &str) -> Vec<Hand> {
+    process_input(nom_lines(parse_line))(input)
 }
 
-#[aoc_generator(day7, part1)]
-pub fn generator_p1(input: &str) -> Vec<Hand> {
-    generator::<0>(input)
-}
+fn solve<const JOKER: u8>(inputs: &[Hand]) -> usize {
+    let mut inputs = inputs.to_vec();
+    inputs.sort_by(|a, b| a.compare(b, JOKER));
 
-#[aoc_generator(day7, part2)]
-pub fn generator_p2(input: &str) -> Vec<Hand> {
-    generator::<1>(input)
-}
-
-fn solve(inputs: &[Hand]) -> usize {
     inputs
         .iter()
         .enumerate()
+        // .inspect(|x| println!("{x:?} {:?}", x.1.classify(JOKER)))
         .map(|(place, hand)| hand.value * (place + 1))
         .sum()
 }
 
 #[aoc(day7, part1)]
 pub fn part1(inputs: &[Hand]) -> usize {
-    solve(inputs)
+    solve::<0>(inputs)
 }
 
 #[aoc(day7, part2)]
 pub fn part2(inputs: &[Hand]) -> usize {
-    solve(inputs)
+    solve::<11>(inputs)
 }
 
 #[cfg(test)]
@@ -165,19 +154,19 @@ QQQJA 483";
 
     #[test]
     pub fn input_test() {
-        println!("{:?}", generator_p2(SAMPLE));
+        println!("{:?}", generator(SAMPLE));
 
         // assert_eq!(generator(SAMPLE), Object());
     }
 
     #[test]
     pub fn part1_test() {
-        assert_eq!(part1(&generator_p1(SAMPLE)), 6440);
+        assert_eq!(part1(&generator(SAMPLE)), 6440);
     }
 
     #[test]
     pub fn part2_test() {
-        assert_eq!(part2(&generator_p2(SAMPLE)), 5905);
+        assert_eq!(part2(&generator(SAMPLE)), 5905);
     }
 
     mod regression {
@@ -189,11 +178,10 @@ QQQJA 483";
         #[test]
         pub fn test() {
             let input = INPUT.trim_end_matches('\n');
-            let output1 = generator_p1(input);
-            let output2 = generator_p2(input);
+            let output = generator(input);
 
-            assert_eq!(part1(&output1), ANSWERS.0);
-            assert_eq!(part2(&output2), ANSWERS.1);
+            assert_eq!(part1(&output), ANSWERS.0);
+            assert_eq!(part2(&output), ANSWERS.1);
         }
     }
 }

@@ -12,7 +12,7 @@
   - [solution](src/day05.rs)
 - [Day 6: Wait For It](https://adventofcode.com/2023/day/6)
   - [solution](src/day06.rs)
-- [Day 7:](https://adventofcode.com/2023/day/7)
+- [Day 7: Camel Cards](https://adventofcode.com/2023/day/7)
   - [solution](src/day07.rs)
 <!-- Insert before -->
 
