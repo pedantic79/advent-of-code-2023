@@ -1,6 +1,7 @@
 use std::cmp::{Ordering, Reverse};
 
 use aoc_runner_derive::{aoc, aoc_generator};
+use arrayvec::ArrayVec;
 use itertools::Itertools;
 use nom::{
     character::complete::{one_of, space1},
@@ -26,28 +27,28 @@ pub enum HandTypes {
 
 #[derive(Debug, Clone)]
 pub struct Hand {
-    cards: Vec<HandValue>,
+    cards: [HandValue; 5],
     value: usize,
 }
 
 impl Hand {
     fn classify(&self, joker: u8) -> HandTypes {
         let jokers = self.cards.iter().filter(|x| x.0 == joker).count();
-        let mut cards: Vec<HandValue> = self
+        let mut cards: ArrayVec<HandValue, 5> = self
             .cards
             .iter()
             .filter(|x| x.0 != joker)
             .copied()
             .collect();
 
-        cards.sort_by_key(|&x| x);
-        let mut data_grouped: Vec<Vec<HandValue>> = Vec::new();
+        cards.sort_unstable_by_key(|&x| x);
+        let mut data_grouped: ArrayVec<ArrayVec<HandValue, 5>, 5> = ArrayVec::new();
 
         for (_, group) in &cards.into_iter().group_by(|elt| *elt) {
             data_grouped.push(group.collect());
         }
 
-        data_grouped.sort_by_key(|x| Reverse(x.len()));
+        data_grouped.sort_unstable_by_key(|x| Reverse(x.len()));
         let cards = data_grouped;
 
         if cards.is_empty() {
@@ -101,10 +102,10 @@ fn parse_card(s: &str) -> IResult<&str, HandValue> {
     })(s)
 }
 
-fn parse_hand(s: &str) -> IResult<&str, Vec<HandValue>> {
+fn parse_hand(s: &str) -> IResult<&str, [HandValue; 5]> {
     map(
         tuple((parse_card, parse_card, parse_card, parse_card, parse_card)),
-        |x| vec![x.0, x.1, x.2, x.3, x.4],
+        |x| [x.0, x.1, x.2, x.3, x.4],
     )(s)
 }
 
@@ -122,10 +123,10 @@ fn generator(input: &str) -> Vec<Hand> {
 
 fn solve<const JOKER: u8>(inputs: &[Hand]) -> usize {
     let mut inputs = inputs.to_vec();
-    inputs.sort_by(|a, b| a.compare(b, JOKER));
+    inputs.sort_unstable_by(|a, b| a.compare(b, JOKER));
 
     inputs
-        .iter()
+        .into_iter()
         .enumerate()
         // .inspect(|x| println!("{x:?} {:?}", x.1.classify(JOKER)))
         .map(|(place, hand)| hand.value * (place + 1))
