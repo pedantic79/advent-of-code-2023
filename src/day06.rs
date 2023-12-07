@@ -1,14 +1,13 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use nom::{
-    bytes::complete::{tag, take_until, take_while},
+    bytes::complete::{tag, take_until, take_while1},
     character::complete::{space0, space1},
-    combinator::map_res,
     multi::separated_list1,
     IResult,
 };
 use num::integer::sqrt;
 
-use crate::common::nom::{fold_separated_list0, nom_lines, nom_usize, process_input};
+use crate::common::nom::{nom_lines, nom_usize, process_input};
 
 fn parse_line(s: &str) -> IResult<&str, Vec<usize>> {
     let (s, _) = take_until(":")(s)?;
@@ -21,20 +20,21 @@ fn parse_line(s: &str) -> IResult<&str, Vec<usize>> {
 fn parse_number(s: &str) -> IResult<&str, usize> {
     let (s, _) = take_until(":")(s)?;
     let (s, _) = tag(":")(s)?;
-    let (s, _) = space0(s)?;
+    let (s, _) = space1(s)?;
+    let (s, line) = take_while1(|x: char| x != '\n')(s)?;
 
-    map_res(
-        fold_separated_list0(
-            space1,
-            take_while(|x: char| x.is_numeric()),
-            String::new,
-            |mut acc, x| {
-                acc += x;
-                acc
-            },
-        ),
-        |x| x.parse(),
-    )(s)
+    Ok((
+        s,
+        line.bytes()
+            .map(|c| {
+                if c.is_ascii_digit() {
+                    (c - b'0', 10)
+                } else {
+                    (0, 1)
+                }
+            })
+            .fold(0, |total, (n, multi)| total * multi + usize::from(n)),
+    ))
 }
 
 #[aoc_generator(day6, part1)]
