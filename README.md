@@ -14,6 +14,8 @@
   - [solution](src/day06.rs)
 - [Day 7: Camel Cards](https://adventofcode.com/2023/day/7)
   - [solution](src/day07.rs)
+- [Day 8: Haunted Wasteland](https://adventofcode.com/2023/day/8)
+  - [solution](src/day08.rs)
 <!-- Insert before -->
 
 See:
