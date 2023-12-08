@@ -8,6 +8,7 @@ use nom::{
     IResult,
 };
 use num::Integer;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 
 use crate::common::nom::fold_separated_list0;
 
@@ -89,10 +90,10 @@ fn solve<'a>(
 #[aoc(day8, part2)]
 pub fn part2((ins, net): &(Vec<Direction>, HashMap<String, (String, String)>)) -> usize {
     net.keys()
+        .par_bridge()
         .filter(|k| k.ends_with('A'))
         .map(|k| solve(k, ins, net, true))
-        .reduce(|l, x| l.lcm(&x))
-        .unwrap()
+        .reduce(|| 1, |l, x| l.lcm(&x))
 }
 
 #[cfg(test)]
