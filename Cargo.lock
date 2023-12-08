@@ -23,6 +23,7 @@ dependencies = [
  "rayon",
  "rustc-hash",
  "scanf",
+ "smallstr",
  "stable-pattern",
 ]
 
@@ -528,6 +529,21 @@ dependencies = [
  "ryu",
  "serde",
 ]
+
+[[package]]
+name = "smallstr"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63b1aefdf380735ff8ded0b15f31aab05daf1f70216c01c02a12926badd1df9d"
+dependencies = [
+ "smallvec",
+]
+
+[[package]]
+name = "smallvec"
+version = "1.11.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4dccd0940a2dcdf68d092b8cbab7dc0ad8fa938bf95787e1b916b0e3d0e8e970"
 
 [[package]]
 name = "stable-pattern"

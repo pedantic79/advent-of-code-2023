@@ -24,6 +24,7 @@ scanf = "1"
 bit-set = "0.5"
 lazy_static = "1"
 bitvec = "1"
+smallstr = "0.3.0"
 
 [profile.release]
 lto = "thin"

@@ -10,8 +10,11 @@ use nom::{
 use num::Integer;
 use rayon::iter::{ParallelBridge, ParallelIterator};
 use rustc_hash::FxHashMap as HashMap;
+use smallstr::SmallString;
 
 use crate::common::nom::fold_separated_list0;
+
+type String = SmallString<[u8; 3]>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Direction {
@@ -20,14 +23,14 @@ pub enum Direction {
 }
 
 fn parse_node(s: &str) -> IResult<&str, (String, String, String)> {
-    let (s, key) = map(take(3usize), ToString::to_string)(s)?;
+    let (s, key) = map(take(3usize), String::from)(s)?;
     let (s, _) = tag(" = ")(s)?;
     let (s, (l, _, r)) = delimited(
         tag("("),
         tuple((
-            map(take(3usize), ToString::to_string),
+            map(take(3usize), String::from),
             tag(", "),
-            map(take(3usize), ToString::to_string),
+            map(take(3usize), String::from),
         )),
         tag(")"),
     )(s)?;
