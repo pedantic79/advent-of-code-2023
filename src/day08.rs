@@ -1,4 +1,4 @@
-use ahash::{HashMap, HashMapExt};
+use ahash::HashMapExt;
 use aoc_runner_derive::{aoc, aoc_generator};
 use nom::{
     bytes::complete::{tag, take},
@@ -9,6 +9,7 @@ use nom::{
 };
 use num::Integer;
 use rayon::iter::{ParallelBridge, ParallelIterator};
+use rustc_hash::FxHashMap as HashMap;
 
 use crate::common::nom::fold_separated_list0;
 
