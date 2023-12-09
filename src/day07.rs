@@ -14,7 +14,7 @@ use crate::common::nom::{nom_lines, nom_usize, process_input};
 
 type HandValue = Reverse<u8>;
 
-#[derive(Debug, PartialEq, PartialOrd, Ord, Eq)]
+#[derive(Debug, PartialEq, PartialOrd, Ord, Eq, Clone)]
 pub enum HandTypes {
     Five,
     Four,
@@ -29,15 +29,16 @@ pub enum HandTypes {
 pub struct Hand {
     cards: [HandValue; 5],
     value: usize,
+    part1: HandTypes,
+    part2: HandTypes,
 }
 
 impl Hand {
-    fn classify(&self, joker: u8) -> HandTypes {
-        let jokers = self.cards.iter().filter(|x| x.0 == joker).count();
-        let mut cards: ArrayVec<HandValue, 5> = self
-            .cards
+    fn classify<const JOKER_VALUE: u8>(cards: &[HandValue; 5]) -> HandTypes {
+        let jokers = cards.iter().filter(|x| x.0 == JOKER_VALUE).count();
+        let mut cards: ArrayVec<HandValue, 5> = cards
             .iter()
-            .filter(|x| x.0 != joker)
+            .filter(|x| x.0 != JOKER_VALUE)
             .copied()
             .collect();
 
@@ -63,14 +64,14 @@ impl Hand {
             2 if cards[1].len() == 2 => HandTypes::TwoPair,
             2 => HandTypes::OnePair,
             1 => HandTypes::High,
-            _ => panic!("unknown hand type: {:?}", self.cards),
+            _ => panic!("unknown hand type: {:?}", cards),
         }
     }
 
-    fn cards_compare(s: &[HandValue], other: &[HandValue], joker: bool) -> Ordering {
+    fn cards_compare<const JOKER: bool>(s: &[HandValue], other: &[HandValue]) -> Ordering {
         for (a, b) in s.iter().zip(other.iter()) {
-            let a = if joker && a.0 == 11 { Reverse(1) } else { *a };
-            let b = if joker && b.0 == 11 { Reverse(1) } else { *b };
+            let a = if JOKER && a.0 == 11 { Reverse(1) } else { *a };
+            let b = if JOKER && b.0 == 11 { Reverse(1) } else { *b };
 
             let c = a.cmp(&b);
             if c != Ordering::Equal {
@@ -80,11 +81,15 @@ impl Hand {
         Ordering::Equal
     }
 
-    fn compare(&self, other: &Self, joker: u8) -> Ordering {
-        other
-            .classify(joker)
-            .cmp(&self.classify(joker))
-            .then_with(|| Self::cards_compare(&other.cards, &self.cards, joker == 11))
+    fn compare<const JOKER: bool>(&self, other: &Self) -> Ordering {
+        let (o, s) = if JOKER {
+            (&other.part2, &self.part2)
+        } else {
+            (&other.part1, &self.part1)
+        };
+
+        o.cmp(s)
+            .then_with(|| Self::cards_compare::<JOKER>(&other.cards, &self.cards))
     }
 }
 
@@ -113,7 +118,19 @@ fn parse_line(s: &str) -> IResult<&str, Hand> {
     let (s, cards) = parse_hand(s)?;
     let (s, _) = space1(s)?;
     let (s, value) = nom_usize(s)?;
-    Ok((s, Hand { cards, value }))
+
+    let part1 = Hand::classify::<0>(&cards);
+    let part2 = Hand::classify::<11>(&cards);
+
+    Ok((
+        s,
+        Hand {
+            cards,
+            value,
+            part1,
+            part2,
+        },
+    ))
 }
 
 #[aoc_generator(day7)]
@@ -121,26 +138,26 @@ fn generator(input: &str) -> Vec<Hand> {
     process_input(nom_lines(parse_line))(input)
 }
 
-fn solve<const JOKER: u8>(inputs: &[Hand]) -> usize {
+fn solve<const JOKER: bool>(inputs: &[Hand]) -> usize {
     let mut inputs = inputs.to_vec();
-    inputs.sort_unstable_by(|a, b| a.compare(b, JOKER));
+    inputs.sort_unstable_by(|a, b| a.compare::<JOKER>(b));
 
     inputs
         .into_iter()
         .enumerate()
-        // .inspect(|x| println!("{x:?} {:?}", x.1.classify(JOKER)))
+        // .inspect(|x| println!("{x:?}"))
         .map(|(place, hand)| hand.value * (place + 1))
         .sum()
 }
 
 #[aoc(day7, part1)]
 pub fn part1(inputs: &[Hand]) -> usize {
-    solve::<0>(inputs)
+    solve::<false>(inputs)
 }
 
 #[aoc(day7, part2)]
 pub fn part2(inputs: &[Hand]) -> usize {
-    solve::<11>(inputs)
+    solve::<true>(inputs)
 }
 
 #[cfg(test)]
