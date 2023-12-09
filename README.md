@@ -16,6 +16,8 @@
   - [solution](src/day07.rs)
 - [Day 8: Haunted Wasteland](https://adventofcode.com/2023/day/8)
   - [solution](src/day08.rs)
+- [Day 9: Mirage Maintenance](https://adventofcode.com/2023/day/9)
+  - [solution](src/day09.rs)
 <!-- Insert before -->
 
 See:

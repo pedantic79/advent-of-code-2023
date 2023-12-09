@@ -1,3 +1,3 @@
 commit-input:
-    cd input && git add . && git commit -m "$(git status --porcelain | sed 's/A /Add/')" && git push
+    cd input && [[ -n $(git status -s) ]] && git add . && git commit -m "$(git status --porcelain | sed 's/A /Add/')" && git push
 
