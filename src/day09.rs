@@ -1,74 +1,61 @@
+use std::rc::Rc;
+
 use aoc_runner_derive::{aoc, aoc_generator};
 
 use crate::common::utils::parse_split;
 
 #[aoc_generator(day9)]
-pub fn generator(input: &str) -> Vec<Vec<i64>> {
-    input.lines().map(|line| parse_split(line, ' ')).collect()
+pub fn generator(input: &str) -> Vec<Vec<Rc<Vec<i64>>>> {
+    let mut res = Vec::new();
+    for v in input.lines().map(|line| parse_split(line, ' ')) {
+        let mut v = Rc::new(v);
+        let mut differences = vec![Rc::clone(&v)];
+
+        loop {
+            let v2 = Rc::new(diff(&v));
+            if v2.iter().all(|&x| x == 0) {
+                break;
+            }
+
+            differences.push(Rc::clone(&v2));
+
+            v = v2;
+        }
+
+        res.push(differences)
+    }
+
+    res
 }
 
 fn diff(v: &[i64]) -> Vec<i64> {
     v.windows(2).map(|x| x[1] - x[0]).collect()
 }
 
-fn process(v: &[i64]) -> i64 {
-    let mut v = v.to_vec();
-    let mut differences = vec![v.to_vec()];
-
-    loop {
-        let v2 = diff(&v);
-        let all_zeros = v2.iter().all(|&x| x == 0);
-        if all_zeros {
-            break;
-        }
-
-        differences.push(v2.clone());
-
-        v = v2;
-    }
-
-    let mut constant = 0;
-    while let Some(d) = differences.pop() {
-        let last = d.last().copied().unwrap() + constant;
-        constant = last;
-    }
-
-    constant
-}
-
-fn process2(v: &[i64]) -> i64 {
-    let mut v = v.to_vec();
-    let mut differences = vec![v.to_vec()];
-
-    loop {
-        let v2 = diff(&v);
-        let all_zeros = v2.iter().all(|&x| x == 0);
-        if all_zeros {
-            break;
-        }
-
-        differences.push(v2.clone());
-
-        v = v2;
-    }
-
-    let mut constant = 0;
-    while let Some(d) = differences.pop() {
-        let last = d.first().copied().unwrap() - constant;
-        constant = last;
-    }
-
-    constant
+fn process<F>(differences: &[Rc<Vec<i64>>], op: F) -> i64
+where
+    F: Fn(&Rc<Vec<i64>>, i64) -> i64,
+{
+    differences
+        .iter()
+        .rev()
+        .fold(0, |constant, d| op(d, constant))
 }
 
 #[aoc(day9, part1)]
-pub fn part1(inputs: &[Vec<i64>]) -> i64 {
-    inputs.iter().map(|x| process(x)).sum()
+pub fn part1(inputs: &[Vec<Rc<Vec<i64>>>]) -> i64 {
+    inputs
+        .iter()
+        .map(|x| process(x, |d, c| d.last().copied().unwrap() + c))
+        .sum()
 }
 
 #[aoc(day9, part2)]
-pub fn part2(inputs: &[Vec<i64>]) -> i64 {
-    inputs.iter().map(|x| process2(x)).sum()
+pub fn part2(inputs: &[Vec<Rc<Vec<i64>>>]) -> i64 {
+    inputs
+        .iter()
+        .map(|x| process(x, |d, c| d.first().copied().unwrap() - c))
+        .sum()
 }
 
 #[cfg(test)]
