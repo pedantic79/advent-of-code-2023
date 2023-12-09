@@ -1,24 +1,16 @@
-use std::rc::Rc;
-
 use aoc_runner_derive::{aoc, aoc_generator};
 
 use crate::common::utils::parse_split;
 
 #[aoc_generator(day9)]
-pub fn generator(input: &str) -> Vec<Vec<Rc<Vec<i64>>>> {
+pub fn generator(input: &str) -> Vec<Vec<Vec<i64>>> {
     let mut res = Vec::new();
-    for v in input.lines().map(|line| parse_split(line, ' ')) {
-        let mut v = Rc::new(v);
-        let mut differences = vec![Rc::clone(&v)];
+    for mut v in input.lines().map(|line| parse_split(line, ' ')) {
+        let mut differences = Vec::new();
 
-        loop {
-            let v2 = Rc::new(diff(&v));
-            if v2.iter().all(|&x| x == 0) {
-                break;
-            }
-
-            differences.push(Rc::clone(&v2));
-
+        while v.iter().any(|&x| x != 0) {
+            let v2 = diff(&v);
+            differences.push(v);
             v = v2;
         }
 
@@ -32,9 +24,9 @@ fn diff(v: &[i64]) -> Vec<i64> {
     v.windows(2).map(|x| x[1] - x[0]).collect()
 }
 
-fn process<F>(differences: &[Rc<Vec<i64>>], op: F) -> i64
+fn process<F>(differences: &[Vec<i64>], op: F) -> i64
 where
-    F: Fn(&Rc<Vec<i64>>, i64) -> i64,
+    F: Fn(&Vec<i64>, i64) -> i64,
 {
     differences
         .iter()
@@ -43,7 +35,7 @@ where
 }
 
 #[aoc(day9, part1)]
-pub fn part1(inputs: &[Vec<Rc<Vec<i64>>>]) -> i64 {
+pub fn part1(inputs: &[Vec<Vec<i64>>]) -> i64 {
     inputs
         .iter()
         .map(|x| process(x, |d, c| d.last().copied().unwrap() + c))
@@ -51,7 +43,7 @@ pub fn part1(inputs: &[Vec<Rc<Vec<i64>>>]) -> i64 {
 }
 
 #[aoc(day9, part2)]
-pub fn part2(inputs: &[Vec<Rc<Vec<i64>>>]) -> i64 {
+pub fn part2(inputs: &[Vec<Vec<i64>>]) -> i64 {
     inputs
         .iter()
         .map(|x| process(x, |d, c| d.first().copied().unwrap() - c))
