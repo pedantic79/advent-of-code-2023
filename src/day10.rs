@@ -39,11 +39,32 @@ fn next_direction(pipe: u8, dir: &Dir) -> Option<Dir> {
     })
 }
 
+fn get(grid: &[Vec<u8>], r: usize, c: usize) -> &u8 {
+    grid.get(r).and_then(|x| x.get(c)).unwrap_or(&b'.')
+}
+
+fn determine_start(grid: &[Vec<u8>], r: usize, c: usize) -> (u8, Dir) {
+    let up = b"|7F".contains(get(grid, r.wrapping_sub(1), c));
+    let down = b"|LJ".contains(get(grid, r + 1, c));
+    let left = b"-FL".contains(get(grid, r, c.wrapping_sub(1)));
+    let right = b"-J7".contains(get(grid, r, c + 1));
+
+    match (up, down, left, right) {
+        (false, false, true, true) => (b'-', Dir::Right),
+        (false, true, false, true) => (b'F', Dir::Down),
+        (false, true, true, false) => (b'7', Dir::Down),
+        (true, false, false, true) => (b'L', Dir::Right),
+        (true, false, true, false) => (b'J', Dir::Up),
+        (true, true, false, false) => (b'|', Dir::Down),
+        _ => panic!("unknown piece {up} {down} {left} {right}"),
+    }
+}
+
 #[aoc_generator(day10)]
 pub fn generator(input: &str) -> (HashSet<(usize, usize)>, Vec<Vec<u8>>) {
-    let mut start = (0, 0);
+    let mut start: (usize, usize) = (0, 0);
 
-    let grid: Vec<_> = input
+    let mut grid: Vec<Vec<u8>> = input
         .lines()
         .enumerate()
         .map(|(row, line)| {
@@ -59,25 +80,30 @@ pub fn generator(input: &str) -> (HashSet<(usize, usize)>, Vec<Vec<u8>>) {
         })
         .collect();
 
-    (solve(&grid, start), grid)
+    let (start_pipe, start_dir) = determine_start(&grid, start.0, start.1);
+    grid[start.0][start.1] = start_pipe;
+
+    (solve(&grid, start, start_dir), grid)
 }
 
-fn solve(grid: &[Vec<u8>], start: (usize, usize)) -> HashSet<(usize, usize)> {
+fn solve(grid: &[Vec<u8>], start: (usize, usize), mut dir: Dir) -> HashSet<(usize, usize)> {
     let (mut r, mut c) = start;
-    let mut dir = Dir::Down; // assume we can go down first
     let mut pipe_set = HashSet::new();
     pipe_set.insert((r, c));
 
     loop {
         dir.next_pos(&mut r, &mut c);
-        let pipe = grid[r][c];
-        if pipe == b'S' {
+        if (r, c) == start {
             break;
         }
         pipe_set.insert((r, c));
-
-        dir = next_direction(pipe, &dir)
-            .unwrap_or_else(|| panic!("Unknown pipe combination {} {:?}", char::from(pipe), dir,));
+        dir = next_direction(grid[r][c], &dir).unwrap_or_else(|| {
+            panic!(
+                "Unknown pipe combination {} {:?}",
+                char::from(grid[r][c]),
+                dir,
+            )
+        });
     }
 
     pipe_set
