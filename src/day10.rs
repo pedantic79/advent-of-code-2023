@@ -39,10 +39,10 @@ fn next_direction(pipe: u8, dir: &Dir) -> Option<Dir> {
 }
 
 #[aoc_generator(day10)]
-pub fn generator(input: &str) -> (Vec<Vec<u8>>, (usize, usize)) {
+pub fn generator(input: &str) -> (HashSet<(usize, usize)>, Vec<Vec<u8>>) {
     let mut start = (0, 0);
 
-    let grid = input
+    let grid: Vec<_> = input
         .lines()
         .enumerate()
         .map(|(row, line)| {
@@ -57,33 +57,12 @@ pub fn generator(input: &str) -> (Vec<Vec<u8>>, (usize, usize)) {
                 .collect()
         })
         .collect();
-    (grid, start)
+
+    (solve(&grid, start), grid)
 }
 
-#[aoc(day10, part1)]
-pub fn part1((grid, start): &(Vec<Vec<u8>>, (usize, usize))) -> usize {
-    let (mut r, mut c) = *start;
-    let mut dir = Dir::Down; // assume we can go down first
-    let mut count = 0;
-
-    loop {
-        count += 1;
-
-        dir.next_pos(&mut r, &mut c);
-        let pipe = grid[r][c];
-        if pipe == b'S' {
-            break;
-        }
-        dir = next_direction(pipe, &dir)
-            .unwrap_or_else(|| panic!("Unknown pipe combination {} {:?}", char::from(pipe), dir,));
-    }
-
-    count / 2
-}
-
-#[aoc(day10, part2)]
-pub fn part2((grid, start): &(Vec<Vec<u8>>, (usize, usize))) -> usize {
-    let (mut r, mut c) = *start;
+fn solve(grid: &[Vec<u8>], start: (usize, usize)) -> HashSet<(usize, usize)> {
+    let (mut r, mut c) = start;
     let mut dir = Dir::Down; // assume we can go down first
     let mut pipe_set = HashSet::new();
     pipe_set.insert((r, c));
@@ -100,12 +79,22 @@ pub fn part2((grid, start): &(Vec<Vec<u8>>, (usize, usize))) -> usize {
             .unwrap_or_else(|| panic!("Unknown pipe combination {} {:?}", char::from(pipe), dir,));
     }
 
+    pipe_set
+}
+
+#[aoc(day10, part1)]
+pub fn part1((maze, _): &(HashSet<(usize, usize)>, Vec<Vec<u8>>)) -> usize {
+    maze.len() / 2
+}
+
+#[aoc(day10, part2)]
+pub fn part2((maze, grid): &(HashSet<(usize, usize)>, Vec<Vec<u8>>)) -> usize {
     let mut count = 0;
     for (row, line) in grid.iter().enumerate() {
         // we can as assume we're outside by default
         let mut inside = false;
         for (col, cell) in line.iter().enumerate() {
-            if pipe_set.contains(&(row, col)) {
+            if maze.contains(&(row, col)) {
                 // Check what parity we are in.
                 // If we see a vertical, then we go outside to inside and vice-versa
                 if b"|JLS".contains(cell) {
