@@ -1,11 +1,15 @@
 use aoc_runner_derive::{aoc, aoc_generator};
+use nom::{bytes::complete::tag, multi::separated_list0};
 
-use crate::common::utils::parse_split;
+use crate::common::nom::{nom_i64, process_input};
 
 #[aoc_generator(day9)]
 pub fn generator(input: &str) -> Vec<Vec<Vec<i64>>> {
     let mut res = Vec::new();
-    for mut v in input.lines().map(|line| parse_split(line, ' ')) {
+    for mut v in input
+        .lines()
+        .map(|line| process_input(separated_list0(tag(" "), nom_i64::<_, ()>))(line))
+    {
         let mut differences = Vec::new();
 
         while v.iter().any(|&x| x != 0) {
