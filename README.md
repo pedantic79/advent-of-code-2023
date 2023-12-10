@@ -18,6 +18,8 @@
   - [solution](src/day08.rs)
 - [Day 9: Mirage Maintenance](https://adventofcode.com/2023/day/9)
   - [solution](src/day09.rs)
+- [Day 10: Pipe Maze](https://adventofcode.com/2023/day/10)
+  - [solution](src/day10.rs)
 <!-- Insert before -->
 
 See:
