@@ -19,24 +19,55 @@ impl Dir {
             Dir::Right => *c += 1,
         }
     }
+
+    fn next_direction(&self, pipe: u8) -> Option<Self> {
+        Some(match (pipe, self) {
+            (b'|', Dir::Down) => Dir::Down,
+            (b'|', Dir::Up) => Dir::Up,
+            (b'-', Dir::Left) => Dir::Left,
+            (b'-', Dir::Right) => Dir::Right,
+            (b'L', Dir::Down) => Dir::Right,
+            (b'L', Dir::Left) => Dir::Up,
+            (b'J', Dir::Down) => Dir::Left,
+            (b'J', Dir::Right) => Dir::Up,
+            (b'7', Dir::Right) => Dir::Down,
+            (b'7', Dir::Up) => Dir::Left,
+            (b'F', Dir::Up) => Dir::Right,
+            (b'F', Dir::Left) => Dir::Down,
+            _ => return None,
+        })
+    }
 }
 
-fn next_direction(pipe: u8, dir: &Dir) -> Option<Dir> {
-    Some(match (pipe, dir) {
-        (b'|', Dir::Down) => Dir::Down,
-        (b'|', Dir::Up) => Dir::Up,
-        (b'-', Dir::Left) => Dir::Left,
-        (b'-', Dir::Right) => Dir::Right,
-        (b'L', Dir::Down) => Dir::Right,
-        (b'L', Dir::Left) => Dir::Up,
-        (b'J', Dir::Down) => Dir::Left,
-        (b'J', Dir::Right) => Dir::Up,
-        (b'7', Dir::Right) => Dir::Down,
-        (b'7', Dir::Up) => Dir::Left,
-        (b'F', Dir::Up) => Dir::Right,
-        (b'F', Dir::Left) => Dir::Down,
-        _ => return None,
-    })
+#[derive(Debug)]
+pub struct Maze {
+    pipe_loop: HashSet<(usize, usize)>,
+    grid: Vec<Vec<u8>>,
+}
+
+impl Maze {
+    fn new(grid: Vec<Vec<u8>>, start: (usize, usize), mut dir: Dir) -> Self {
+        let (mut r, mut c) = start;
+        let mut pipe_loop = HashSet::new();
+        pipe_loop.insert((r, c));
+
+        loop {
+            dir.next_pos(&mut r, &mut c);
+            if (r, c) == start {
+                break;
+            }
+            pipe_loop.insert((r, c));
+            dir = dir.next_direction(grid[r][c]).unwrap_or_else(|| {
+                panic!(
+                    "Unknown pipe combination {} {:?}",
+                    char::from(grid[r][c]),
+                    dir,
+                )
+            });
+        }
+
+        Self { pipe_loop, grid }
+    }
 }
 
 fn get(grid: &[Vec<u8>], r: usize, c: usize) -> &u8 {
@@ -61,7 +92,7 @@ fn determine_start(grid: &[Vec<u8>], r: usize, c: usize) -> (u8, Dir) {
 }
 
 #[aoc_generator(day10)]
-pub fn generator(input: &str) -> (HashSet<(usize, usize)>, Vec<Vec<u8>>) {
+pub fn generator(input: &str) -> Maze {
     let mut start: (usize, usize) = (0, 0);
 
     let mut grid: Vec<Vec<u8>> = input
@@ -83,51 +114,32 @@ pub fn generator(input: &str) -> (HashSet<(usize, usize)>, Vec<Vec<u8>>) {
     let (start_pipe, start_dir) = determine_start(&grid, start.0, start.1);
     grid[start.0][start.1] = start_pipe;
 
-    (solve(&grid, start, start_dir), grid)
-}
-
-fn solve(grid: &[Vec<u8>], start: (usize, usize), mut dir: Dir) -> HashSet<(usize, usize)> {
-    let (mut r, mut c) = start;
-    let mut pipe_set = HashSet::new();
-    pipe_set.insert((r, c));
-
-    loop {
-        dir.next_pos(&mut r, &mut c);
-        if (r, c) == start {
-            break;
-        }
-        pipe_set.insert((r, c));
-        dir = next_direction(grid[r][c], &dir).unwrap_or_else(|| {
-            panic!(
-                "Unknown pipe combination {} {:?}",
-                char::from(grid[r][c]),
-                dir,
-            )
-        });
-    }
-
-    pipe_set
+    Maze::new(grid, start, start_dir)
 }
 
 #[aoc(day10, part1)]
-pub fn part1((maze, _): &(HashSet<(usize, usize)>, Vec<Vec<u8>>)) -> usize {
-    maze.len() / 2
+pub fn part1(maze: &Maze) -> usize {
+    maze.pipe_loop.len() / 2
 }
 
 #[aoc(day10, part2)]
-pub fn part2((maze, grid): &(HashSet<(usize, usize)>, Vec<Vec<u8>>)) -> usize {
+pub fn part2(maze: &Maze) -> usize {
     let mut count = 0;
-    for (row, line) in grid.iter().enumerate() {
-        // we can as assume we're outside by default
+    // scan row by row, checking to see if we are in or out of the loop
+    for (row, line) in maze.grid.iter().enumerate() {
+        // we are on the left of the first column, so we can assume we're outside
         let mut inside = false;
         for (col, cell) in line.iter().enumerate() {
-            if maze.contains(&(row, col)) {
-                // Check what parity we are in.
-                // If we see a vertical, then we go outside to inside and vice-versa
-                if b"|JLS".contains(cell) {
+            if maze.pipe_loop.contains(&(row, col)) {
+                // If we see a vertical, then we flip our state
+                // a "vertical" is |JL or |7F. We have to be consistent between
+                // JL or 7F on which we consider "vertical" but either JL xor 7F work
+                if b"|JL".contains(cell) {
                     inside = !inside;
                 }
             } else {
+                // if we aren't part of the loop, then we just add the bool to our count
+                // if we're inside we'll add 1, if we are outside 0
                 count += usize::from(inside);
             }
         }
