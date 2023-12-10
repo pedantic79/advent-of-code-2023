@@ -1,5 +1,6 @@
-use ahash::{HashSet, HashSetExt};
+use ahash::HashSetExt;
 use aoc_runner_derive::{aoc, aoc_generator};
+use rustc_hash::FxHashSet as HashSet;
 
 #[derive(Debug)]
 enum Dir {
