@@ -2,26 +2,33 @@ use aoc_runner_derive::aoc;
 use itertools::Itertools;
 
 fn parse_data<const EXP: usize>(s: &str) -> Vec<(usize, usize)> {
-    let grid = s
-        .lines()
-        .map(|line| line.bytes().collect_vec())
-        .collect_vec();
+    let width = s.lines().next().unwrap().len();
+    let mut col_seen = vec![false; width];
+    let mut row_seen = vec![];
+    let mut grid = Vec::new();
 
-    let mut input = s
-        .lines()
-        .enumerate()
-        .flat_map(|(row, line)| {
-            line.bytes()
-                .enumerate()
-                .filter(|(_, b)| b == &b'#')
-                .map(move |(col, _)| (row, col))
-        })
-        .collect_vec();
-
-    let mut adjustment = 0;
     for (row, line) in s.lines().enumerate() {
-        if line.bytes().all(|b| b == b'.') {
-            for galaxy in input.iter_mut() {
+        row_seen.push(false);
+        for (col, b) in line.bytes().enumerate() {
+            if b == b'#' {
+                col_seen[col] = true;
+                row_seen[row] = true;
+                grid.push((row, col));
+            }
+        }
+    }
+
+    expand_row::<EXP>(&mut grid, &row_seen);
+    expand_col::<EXP>(&mut grid, &col_seen);
+
+    grid
+}
+
+fn expand_row<const EXP: usize>(grid: &mut [(usize, usize)], seen: &[bool]) {
+    let mut adjustment = 0;
+    for (row, seen) in seen.iter().enumerate() {
+        if !seen {
+            for galaxy in grid.iter_mut() {
                 if galaxy.0 > row + adjustment {
                     galaxy.0 += EXP;
                 }
@@ -29,19 +36,13 @@ fn parse_data<const EXP: usize>(s: &str) -> Vec<(usize, usize)> {
             adjustment += EXP;
         }
     }
+}
 
+fn expand_col<const EXP: usize>(grid: &mut [(usize, usize)], seen: &[bool]) {
     let mut adjustment = 0;
-    for col in 0..grid[0].len() {
-        let mut empty = true;
-        for row in &grid {
-            if row[col] == b'#' {
-                empty = false;
-                break;
-            }
-        }
-
-        if empty {
-            for galaxy in input.iter_mut() {
+    for (col, seen) in seen.iter().enumerate() {
+        if !seen {
+            for galaxy in grid.iter_mut() {
                 if galaxy.1 > col + adjustment {
                     galaxy.1 += EXP;
                 }
@@ -49,15 +50,12 @@ fn parse_data<const EXP: usize>(s: &str) -> Vec<(usize, usize)> {
             adjustment += EXP;
         }
     }
-
-    input
 }
 
 fn solve<const EXP: usize>(s: &str) -> usize {
     parse_data::<EXP>(s)
         .into_iter()
         .permutations(2)
-        // .inspect(|x| println!("{x:?}"))
         .map(|pairs| {
             assert_eq!(pairs.len(), 2);
             pairs[0].0.abs_diff(pairs[1].0) + pairs[0].1.abs_diff(pairs[1].1)
