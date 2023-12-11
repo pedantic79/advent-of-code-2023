@@ -33,9 +33,9 @@ fn parse_data<const EXP: usize>(s: &str) -> Vec<(usize, usize)> {
     grid
 }
 
-fn expand<const EXP: usize, F>(grid: &mut [(usize, usize)], seen: &[bool], mut modify: F)
+fn expand<const EXP: usize, F>(grid: &mut [(usize, usize)], seen: &[bool], modify: F)
 where
-    F: FnMut(&mut (usize, usize), usize),
+    F: Fn(&mut (usize, usize), usize),
 {
     let mut adjustment = 0;
     for (row, seen) in seen.iter().enumerate() {
