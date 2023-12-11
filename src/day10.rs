@@ -1,5 +1,6 @@
 use ahash::HashSetExt;
 use aoc_runner_derive::{aoc, aoc_generator};
+use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 use rustc_hash::FxHashSet as HashSet;
 
 #[derive(Debug)]
@@ -124,27 +125,33 @@ pub fn part1(maze: &Maze) -> usize {
 
 #[aoc(day10, part2)]
 pub fn part2(maze: &Maze) -> usize {
-    let mut count = 0;
     // scan row by row, checking to see if we are in or out of the loop
-    for (row, line) in maze.grid.iter().enumerate() {
-        // we are on the left of the first column, so we can assume we're outside
-        let mut inside = false;
-        for (col, cell) in line.iter().enumerate() {
-            if maze.pipe_loop.contains(&(row, col)) {
-                // If we see a vertical, then we flip our state
-                // a "vertical" is |JL or |7F. We have to be consistent between
-                // JL or 7F on which we consider "vertical" but either JL xor 7F work
-                if b"|JL".contains(cell) {
-                    inside = !inside;
+    maze.grid
+        .par_iter()
+        .enumerate()
+        .map(|(row, line)| {
+            // we are on the left of the first column, so we can assume we're outside
+            let mut inside = false;
+            let mut count = 0;
+
+            for (col, cell) in line.iter().enumerate() {
+                if maze.pipe_loop.contains(&(row, col)) {
+                    // If we see a vertical, then we flip our state
+                    // a "vertical" is |JL or |7F. We have to be consistent between
+                    // JL or 7F on which we consider "vertical" but either JL xor 7F work
+                    if b"|JL".contains(cell) {
+                        inside = !inside;
+                    }
+                } else {
+                    // if we aren't part of the loop, then we just add the bool to our count
+                    // if we're inside we'll add 1, if we are outside 0
+                    count += usize::from(inside);
                 }
-            } else {
-                // if we aren't part of the loop, then we just add the bool to our count
-                // if we're inside we'll add 1, if we are outside 0
-                count += usize::from(inside);
             }
-        }
-    }
-    count
+
+            count
+        })
+        .sum()
 }
 
 #[cfg(test)]
