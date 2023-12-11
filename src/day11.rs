@@ -18,30 +18,23 @@ fn parse_data<const EXP: usize>(s: &str) -> Vec<(usize, usize)> {
         row_seen.push(seen);
     }
 
-    expand::<EXP, _>(&mut grid, &row_seen, |galaxy, amount| {
-        if galaxy.0 > amount {
-            galaxy.0 += EXP;
-        }
-    });
-
-    expand::<EXP, _>(&mut grid, &col_seen, |galaxy, amount| {
-        if galaxy.1 > amount {
-            galaxy.1 += EXP;
-        }
-    });
+    expand::<EXP, _>(&mut grid, &row_seen, |(galaxy, _)| galaxy);
+    expand::<EXP, _>(&mut grid, &col_seen, |(_, galaxy)| galaxy);
 
     grid
 }
 
-fn expand<const EXP: usize, F>(grid: &mut [(usize, usize)], seen: &[bool], modify: F)
+fn expand<const EXP: usize, F>(grid: &mut [(usize, usize)], seen: &[bool], get: F)
 where
-    F: Fn(&mut (usize, usize), usize),
+    F: Fn(&mut (usize, usize)) -> &mut usize,
 {
     let mut adjustment = 0;
     for (row, seen) in seen.iter().enumerate() {
         if !seen {
             for galaxy in grid.iter_mut() {
-                modify(galaxy, row + adjustment);
+                if *get(galaxy) > row + adjustment {
+                    *get(galaxy) += EXP;
+                }
             }
             adjustment += EXP;
         }
