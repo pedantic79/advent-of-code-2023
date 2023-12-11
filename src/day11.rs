@@ -1,5 +1,4 @@
 use aoc_runner_derive::aoc;
-use itertools::Itertools;
 
 fn parse_data<const EXP: usize>(s: &str) -> Vec<(usize, usize)> {
     let width = s.lines().next().unwrap().len();
@@ -8,44 +7,41 @@ fn parse_data<const EXP: usize>(s: &str) -> Vec<(usize, usize)> {
     let mut grid = Vec::new();
 
     for (row, line) in s.lines().enumerate() {
-        row_seen.push(false);
+        let mut seen = false;
         for (col, b) in line.bytes().enumerate() {
             if b == b'#' {
                 col_seen[col] = true;
-                row_seen[row] = true;
+                seen = true;
                 grid.push((row, col));
             }
         }
+        row_seen.push(seen);
     }
 
-    expand_row::<EXP>(&mut grid, &row_seen);
-    expand_col::<EXP>(&mut grid, &col_seen);
+    expand::<EXP, _>(&mut grid, &row_seen, |galaxy, amount| {
+        if galaxy.0 > amount {
+            galaxy.0 += EXP;
+        }
+    });
+
+    expand::<EXP, _>(&mut grid, &col_seen, |galaxy, amount| {
+        if galaxy.1 > amount {
+            galaxy.1 += EXP;
+        }
+    });
 
     grid
 }
 
-fn expand_row<const EXP: usize>(grid: &mut [(usize, usize)], seen: &[bool]) {
+fn expand<const EXP: usize, F>(grid: &mut [(usize, usize)], seen: &[bool], mut modify: F)
+where
+    F: FnMut(&mut (usize, usize), usize),
+{
     let mut adjustment = 0;
     for (row, seen) in seen.iter().enumerate() {
         if !seen {
             for galaxy in grid.iter_mut() {
-                if galaxy.0 > row + adjustment {
-                    galaxy.0 += EXP;
-                }
-            }
-            adjustment += EXP;
-        }
-    }
-}
-
-fn expand_col<const EXP: usize>(grid: &mut [(usize, usize)], seen: &[bool]) {
-    let mut adjustment = 0;
-    for (col, seen) in seen.iter().enumerate() {
-        if !seen {
-            for galaxy in grid.iter_mut() {
-                if galaxy.1 > col + adjustment {
-                    galaxy.1 += EXP;
-                }
+                modify(galaxy, row + adjustment);
             }
             adjustment += EXP;
         }
@@ -53,15 +49,17 @@ fn expand_col<const EXP: usize>(grid: &mut [(usize, usize)], seen: &[bool]) {
 }
 
 fn solve<const EXP: usize>(s: &str) -> usize {
-    parse_data::<EXP>(s)
-        .into_iter()
-        .permutations(2)
-        .map(|pairs| {
-            assert_eq!(pairs.len(), 2);
-            pairs[0].0.abs_diff(pairs[1].0) + pairs[0].1.abs_diff(pairs[1].1)
-        })
-        .sum::<usize>()
-        / 2
+    let v = parse_data::<EXP>(s);
+
+    let mut sum = 0;
+    for i in 0..v.len() {
+        for j in i..v.len() {
+            sum += v[i].0.abs_diff(v[j].0);
+            sum += v[i].1.abs_diff(v[j].1);
+        }
+    }
+
+    sum
 }
 
 #[aoc(day11, part1)]
