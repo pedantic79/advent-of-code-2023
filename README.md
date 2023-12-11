@@ -20,6 +20,8 @@
   - [solution](src/day09.rs)
 - [Day 10: Pipe Maze](https://adventofcode.com/2023/day/10)
   - [solution](src/day10.rs)
+- [Day 11: Cosmic Expansion](https://adventofcode.com/2023/day/11)
+  - [solution](src/day11.rs)
 <!-- Insert before -->
 
 See:
