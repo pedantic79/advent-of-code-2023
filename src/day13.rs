@@ -29,25 +29,22 @@ impl Pattern {
         }
     }
 
-    fn count_badness(left: &[u8], right: &[u8]) -> usize {
+    fn count_badness<const TARGET: usize>(left: &[u8], right: &[u8]) -> usize {
         left.iter()
             .zip(right.iter())
             .filter(|(l, r)| l != r)
-            .count()
+            .try_fold(0, |sum, _| (sum < TARGET).then_some(sum + 1))
+            .unwrap_or(TARGET + 1)
     }
 
     fn check_mirror<const TARGET: usize>(left: &[Vec<u8>], right: &[Vec<u8>]) -> bool {
-        // compiler should remove this if check at compile time
-        if TARGET == 0 {
-            left.iter().rev().zip(right.iter()).all(|(l, r)| l == r)
-        } else {
-            left.iter()
-                .rev()
-                .zip(right.iter())
-                .map(|(l, r)| Self::count_badness(l, r))
-                .sum::<usize>()
-                == TARGET
-        }
+        left.iter()
+            .rev()
+            .zip(right.iter())
+            .map(|(l, r)| Self::count_badness::<TARGET>(l, r))
+            .try_fold(0, |sum, n| (sum + n <= TARGET).then_some(sum + n))
+            .unwrap_or(TARGET + 1)
+            == TARGET
     }
 
     fn find_mirror_horz<const TARGET: usize>(p: &[Vec<u8>]) -> Option<usize> {
