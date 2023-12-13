@@ -9,6 +9,15 @@ pub struct Pattern {
     pattern: Vec<Vec<u8>>,
 }
 
+impl std::str::FromStr for Pattern {
+    type Err = Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let pattern: Vec<_> = s.lines().map(|line| line.as_bytes().to_vec()).collect();
+        Ok(Pattern { pattern })
+    }
+}
+
 impl Pattern {
     fn find_mirror<const TARGET: usize>(&self) -> Option<usize> {
         let a = Self::find_mirror_horz::<TARGET>(&self.pattern);
@@ -27,22 +36,21 @@ impl Pattern {
             .count()
     }
 
-    // fn check_mirror(left: &[Vec<u8>], right: &[Vec<u8>]) -> bool {
-    //     left.iter().rev().zip(right.iter()).all(|(l, r)| l == r)
-    // }
+    fn check_mirror<const TARGET: usize>(left: &[Vec<u8>], right: &[Vec<u8>]) -> bool {
+        // left.iter().rev().zip(right.iter()).all(|(l, r)| l == r)
 
-    fn check_mirror(left: &[Vec<u8>], right: &[Vec<u8>]) -> usize {
         left.iter()
             .rev()
             .zip(right.iter())
             .map(|(l, r)| Self::count_badness(l, r))
-            .sum()
+            .sum::<usize>()
+            == TARGET
     }
 
     fn find_mirror_horz<const TARGET: usize>(p: &[Vec<u8>]) -> Option<usize> {
         (1..p.len()).find(|&split| {
             let (left, right) = p.split_at(split);
-            Self::check_mirror(left, right) == TARGET
+            Self::check_mirror::<TARGET>(left, right)
         })
     }
 
@@ -52,20 +60,11 @@ impl Pattern {
     }
 }
 
-impl std::str::FromStr for Pattern {
-    type Err = Infallible;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let pattern: Vec<_> = s.lines().map(|line| line.as_bytes().to_vec()).collect();
-        Ok(Pattern { pattern })
-    }
-}
-
 fn rotate(matrix: &[Vec<u8>]) -> Vec<Vec<u8>> {
     let rows = matrix.len();
     let cols = matrix[0].len();
 
-    let mut rotated_matrix: Vec<Vec<u8>> = vec![vec![0; rows]; cols];
+    let mut rotated_matrix = vec![vec![0; rows]; cols];
 
     for i in 0..rows {
         for (j, &cell) in matrix[rows - 1 - i].iter().enumerate() {
