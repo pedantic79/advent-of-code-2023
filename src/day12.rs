@@ -34,54 +34,77 @@ fn parse_spring(s: &str) -> Vec<State> {
 #[derive(Debug)]
 pub struct Line {
     spring: Vec<State>,
-    cond: Vec<usize>,
+    block: Vec<usize>,
 }
 
 impl Line {
-    fn solve(
-        &self,
-        pos_spring: usize,
-        pos_cond: usize,
-        stride: usize,
-        dp: &mut HashMap<(usize, usize, usize), usize>,
-    ) -> usize {
-        if let Some(v) = dp.get(&(pos_spring, pos_cond, stride)) {
-            return *v;
-        }
+    fn solve(&self, dp: &mut HashMap<(usize, usize, usize), usize>) -> usize {
+        solve(&self.spring, &self.block, 0, dp)
+    }
 
-        if pos_spring == self.spring.len() {
-            // if cond end and no stride OR
-            // one before the end AND stride matches current cond
-            if pos_cond == self.cond.len() && stride == 0
-                || pos_cond == self.cond.len() - 1 && stride == self.cond[pos_cond]
-            {
-                return 1;
-            } else {
-                return 0;
-            }
+    fn expand(&self) -> Self {
+        let mut spring = Vec::with_capacity((self.spring.len() + 1) * 5);
+        let mut block = Vec::with_capacity(self.block.len() * 5);
+        for _ in 0..4 {
+            spring.extend_from_slice(&self.spring);
+            spring.push(State::Unknown);
+            block.extend_from_slice(&self.block);
         }
+        spring.extend_from_slice(&self.spring);
+        block.extend_from_slice(&self.block);
 
-        let mut res = 0;
-        for c in [State::Operational, State::Damaged] {
-            if self.spring[pos_spring] == c || self.spring[pos_spring] == State::Unknown {
-                let pos = pos_spring + 1;
-                res += match c {
-                    State::Unknown => unreachable!(),
-                    State::Damaged => self.solve(pos, pos_cond, stride + 1, dp),
-                    State::Operational if stride == 0 => self.solve(pos, pos_cond, 0, dp),
-                    State::Operational
-                        // not at the end and we match conditions
-                        if pos_cond < self.cond.len() && stride == self.cond[pos_cond] =>
-                    {
-                        self.solve(pos, pos_cond + 1, 0, dp)
-                    }
-                    State::Operational => 0,
-                };
-            }
+        Self { spring, block }
+    }
+}
+
+fn solve(
+    spring: &[State],
+    block: &[usize],
+    stride: usize,
+    dp: &mut HashMap<(usize, usize, usize), usize>,
+) -> usize {
+    if let Some(v) = dp.get(&(spring.len(), block.len(), stride)) {
+        return *v;
+    }
+
+    if spring.is_empty() {
+        // if block is empty and stride is empty OR
+        // last block is the same as the stride
+        if block.is_empty() && stride == 0 || block.len() == 1 && stride == block[0] {
+            return 1;
+        } else {
+            return 0;
         }
+    }
 
-        dp.insert((pos_spring, pos_cond, stride), res);
-        res
+    let res = solve_helper(&spring[0], spring, block, stride, dp);
+    dp.insert((spring.len(), block.len(), stride), res);
+    res
+}
+
+fn solve_helper(
+    piece: &State,
+    spring: &[State],
+    block: &[usize],
+    stride: usize,
+    dp: &mut HashMap<(usize, usize, usize), usize>,
+) -> usize {
+    // Damaged                             : increase stride
+    // Operational && empty stride         : continue processing
+    // Operational && stride == first block: next block, and reset stride
+    // Operational && anything else        : Invalid, return 0
+    // Unknown                             : Run solve_helper with Damaged + Operational
+    match piece {
+        State::Damaged => solve(&spring[1..], block, stride + 1, dp),
+        State::Operational if stride == 0 => solve(&spring[1..], block, 0, dp),
+        State::Operational if block.first() == Some(&stride) => {
+            solve(&spring[1..], &block[1..], 0, dp)
+        }
+        State::Operational => 0,
+        State::Unknown => {
+            solve_helper(&State::Damaged, spring, block, stride, dp)
+                + solve_helper(&State::Operational, spring, block, stride, dp)
+        }
     }
 }
 
@@ -90,11 +113,11 @@ pub fn generator(input: &str) -> Vec<Line> {
     input
         .lines()
         .map(|line| {
-            let (spring, condition) = line.split_once(' ').unwrap();
+            let (spring, blockition) = line.split_once(' ').unwrap();
 
             Line {
                 spring: parse_spring(spring),
-                cond: parse_split(condition, ','),
+                block: parse_split(blockition, ','),
             }
         })
         .collect()
@@ -106,9 +129,10 @@ pub fn part1(inputs: &[Line]) -> usize {
     inputs
         .iter()
         .map(|l| {
-            let n = l.solve(0, 0, 0, &mut dp);
+            // dp.clear();
+            let x = l.solve(&mut dp);
             dp.clear();
-            n
+            x
         })
         .sum()
 }
@@ -116,24 +140,14 @@ pub fn part1(inputs: &[Line]) -> usize {
 #[aoc(day12, part2)]
 pub fn part2(inputs: &[Line]) -> usize {
     let mut dp = HashMap::new();
-    let mut res = 0;
-
-    for l in inputs {
-        let mut spring = Vec::with_capacity((l.spring.len() + 1) * 5);
-        let mut cond = Vec::with_capacity(l.cond.len() * 5);
-        for _ in 0..4 {
-            spring.extend_from_slice(&l.spring);
-            spring.push(State::Unknown);
-            cond.extend_from_slice(&l.cond);
-        }
-        spring.extend_from_slice(&l.spring);
-        cond.extend_from_slice(&l.cond);
-
-        res += Line { spring, cond }.solve(0, 0, 0, &mut dp);
-        dp.clear();
-    }
-
-    res
+    inputs
+        .iter()
+        .map(|l| {
+            let x = l.expand().solve(&mut dp);
+            dp.clear();
+            x
+        })
+        .sum()
 }
 
 #[cfg(test)]
