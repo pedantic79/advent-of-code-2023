@@ -1,5 +1,6 @@
 use ahash::{HashMap, HashMapExt};
 use aoc_runner_derive::{aoc, aoc_generator};
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
 use crate::common::utils::parse_split;
 
@@ -67,7 +68,31 @@ fn solve(
         return *v;
     }
 
-    if spring.is_empty() {
+    let mut res = 0;
+    if let Some(piece) = spring.first() {
+        // Try doing the count if the variant is Operational and Damaged
+        // If the piece if Unknown we do both
+        // If the piece is Operational or Damaged, then we do it once when the variant matches
+
+        // Damaged                             : increase stride
+        // Operational && empty stride         : continue processing
+        // Operational && stride == first block: next block, and reset stride
+        // Operational && anything else        : Invalid, return 0
+        // Unknown                             : can't happen (handled by the variant logic)
+        for variant in [State::Operational, State::Damaged] {
+            if piece == &variant || piece == &State::Unknown {
+                res += match variant {
+                    State::Damaged => solve(&spring[1..], block, stride + 1, dp),
+                    State::Operational if stride == 0 => solve(&spring[1..], block, 0, dp),
+                    State::Operational if block.first() == Some(&stride) => {
+                        solve(&spring[1..], &block[1..], 0, dp)
+                    }
+                    State::Operational => 0,
+                    State::Unknown => unreachable!(),
+                }
+            }
+        }
+    } else {
         // if block is empty and stride is empty OR
         // last block is the same as the stride
         if block.is_empty() && stride == 0 || block.len() == 1 && stride == block[0] {
@@ -77,35 +102,8 @@ fn solve(
         }
     }
 
-    let res = solve_helper(&spring[0], spring, block, stride, dp);
     dp.insert((spring.len(), block.len(), stride), res);
     res
-}
-
-fn solve_helper(
-    piece: &State,
-    spring: &[State],
-    block: &[usize],
-    stride: usize,
-    dp: &mut HashMap<(usize, usize, usize), usize>,
-) -> usize {
-    // Damaged                             : increase stride
-    // Operational && empty stride         : continue processing
-    // Operational && stride == first block: next block, and reset stride
-    // Operational && anything else        : Invalid, return 0
-    // Unknown                             : Run solve_helper with Damaged + Operational
-    match piece {
-        State::Damaged => solve(&spring[1..], block, stride + 1, dp),
-        State::Operational if stride == 0 => solve(&spring[1..], block, 0, dp),
-        State::Operational if block.first() == Some(&stride) => {
-            solve(&spring[1..], &block[1..], 0, dp)
-        }
-        State::Operational => 0,
-        State::Unknown => {
-            solve_helper(&State::Damaged, spring, block, stride, dp)
-                + solve_helper(&State::Operational, spring, block, stride, dp)
-        }
-    }
 }
 
 #[aoc_generator(day12)]
@@ -125,28 +123,17 @@ pub fn generator(input: &str) -> Vec<Line> {
 
 #[aoc(day12, part1)]
 pub fn part1(inputs: &[Line]) -> usize {
-    let mut dp = HashMap::new();
     inputs
-        .iter()
-        .map(|l| {
-            // dp.clear();
-            let x = l.solve(&mut dp);
-            dp.clear();
-            x
-        })
+        .par_iter()
+        .map(|l| l.solve(&mut HashMap::new()))
         .sum()
 }
 
 #[aoc(day12, part2)]
 pub fn part2(inputs: &[Line]) -> usize {
-    let mut dp = HashMap::new();
     inputs
-        .iter()
-        .map(|l| {
-            let x = l.expand().solve(&mut dp);
-            dp.clear();
-            x
-        })
+        .par_iter()
+        .map(|l| l.expand().solve(&mut HashMap::new()))
         .sum()
 }
 
