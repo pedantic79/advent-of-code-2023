@@ -3,6 +3,7 @@ where
     T: Default + Copy,
     A: AsMut<[T]>,
 {
+    assert_eq!(a.len(), a[0].as_mut().len(), "not a square matrix");
     let len = a.len();
     for i in 0..(len / 2) {
         for j in i..(len - i - 1) {
@@ -20,6 +21,7 @@ where
     T: Default + Copy,
     A: AsMut<[T]>,
 {
+    assert_eq!(a.len(), a[0].as_mut().len(), "not a square matrix");
     let len = a.len();
     for i in 0..(len / 2) {
         for j in i..(len - i - 1) {
@@ -37,6 +39,7 @@ where
     T: Default + Copy,
     A: AsMut<[T]>,
 {
+    assert_eq!(a.len(), a[0].as_mut().len(), "not a square matrix");
     let len = a.len();
 
     if len % 2 == 1 {
@@ -59,6 +62,7 @@ where
     T: Default + Copy,
     A: AsMut<[T]>,
 {
+    assert_eq!(a.len(), a[0].as_mut().len(), "not a square matrix");
     for row in a.iter_mut() {
         row.as_mut().reverse();
     }
