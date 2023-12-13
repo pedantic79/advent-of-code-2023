@@ -37,14 +37,17 @@ impl Pattern {
     }
 
     fn check_mirror<const TARGET: usize>(left: &[Vec<u8>], right: &[Vec<u8>]) -> bool {
-        // left.iter().rev().zip(right.iter()).all(|(l, r)| l == r)
-
-        left.iter()
-            .rev()
-            .zip(right.iter())
-            .map(|(l, r)| Self::count_badness(l, r))
-            .sum::<usize>()
-            == TARGET
+        // compiler should remove this if check at compile time
+        if TARGET == 0 {
+            left.iter().rev().zip(right.iter()).all(|(l, r)| l == r)
+        } else {
+            left.iter()
+                .rev()
+                .zip(right.iter())
+                .map(|(l, r)| Self::count_badness(l, r))
+                .sum::<usize>()
+                == TARGET
+        }
     }
 
     fn find_mirror_horz<const TARGET: usize>(p: &[Vec<u8>]) -> Option<usize> {
