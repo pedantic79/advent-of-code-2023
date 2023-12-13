@@ -22,8 +22,10 @@
   - [solution](src/day10.rs)
 - [Day 11: Cosmic Expansion](https://adventofcode.com/2023/day/11)
   - [solution](src/day11.rs)
-- [Day 12:](https://adventofcode.com/2023/day/12)
+- [Day 12: Hot Springs](https://adventofcode.com/2023/day/12)
   - [solution](src/day12.rs)
+- [Day 13: Point of Incidence](https://adventofcode.com/2023/day/13)
+  - [solution](src/day13.rs)
 <!-- Insert before -->
 
 See:
