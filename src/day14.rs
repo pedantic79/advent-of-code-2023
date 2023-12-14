@@ -29,11 +29,11 @@ pub fn generator(input: &str) -> Dish {
 
 fn roll(grid: &mut Vec<Vec<u8>>) {
     for c in 0..grid[0].len() {
-        for _ in 0..grid.len() {
-            for r in 0..grid.len() {
-                if grid[r][c] == b'O' && r > 0 && grid[r - 1][c] == b'.' {
+        for r in 0..grid.len() {
+            if grid[r][c] == b'O' {
+                if let Some(new_row) = (0..r).rev().take_while(|&x| grid[x][c] == b'.').last() {
                     grid[r][c] = b'.';
-                    grid[r - 1][c] = b'O';
+                    grid[new_row][c] = b'O';
                 }
             }
         }
@@ -70,7 +70,6 @@ pub fn part1(platform: &Dish) -> usize {
 pub fn part2(platform: &Dish) -> usize {
     let mut dish = platform.dish.to_vec();
     let mut seen = HashMap::new();
-    seen.insert(dish.clone(), 0);
 
     let mut t = 0;
     while t < TARGET {
@@ -78,9 +77,9 @@ pub fn part2(platform: &Dish) -> usize {
         cycle(&mut dish);
 
         if let Some(old) = seen.get(&dish) {
-            let cycle = t - old;
-            let amt = (TARGET - t) / cycle;
-            t += amt * cycle;
+            let cyc = t - old;
+            let amt = (TARGET - t) / cyc;
+            t += amt * cyc;
         }
 
         seen.insert(dish.clone(), t);
@@ -106,7 +105,7 @@ O.#..O.#.#
 
     #[test]
     pub fn input_test() {
-        let mut platform = generator(SAMPLE);
+        let platform = generator(SAMPLE);
         println!("{:?}", platform);
 
         // push_left(&mut platform.dish[9]);
@@ -114,7 +113,7 @@ O.#..O.#.#
         // for i in 0..platform.dish.len() {
         //     push_left(&mut platform.dish[i]);
         // }
-        println!("{:?}", platform);
+        // println!("{:?}", platform);
 
         // assert_eq!(generator(SAMPLE), Object());
     }
@@ -141,7 +140,7 @@ O.#..O.#.#
             let output = generator(input);
 
             assert_eq!(part1(&output), ANSWERS.0);
-            // assert_eq!(part2(&output), ANSWERS.1);
+            assert_eq!(part2(&output), ANSWERS.1);
         }
     }
 }
