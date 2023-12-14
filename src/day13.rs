@@ -2,7 +2,7 @@ use std::convert::Infallible;
 
 use aoc_runner_derive::{aoc, aoc_generator};
 
-use crate::common::utils::parse_split;
+use crate::common::{matrix::rotate_right_m_n, utils::parse_split};
 
 #[derive(Debug)]
 pub struct Pattern {
@@ -55,24 +55,9 @@ impl Pattern {
     }
 
     fn find_mirror_vert<const TARGET: usize>(p: &[Vec<u8>]) -> Option<usize> {
-        let p = rotate(p);
+        let p = rotate_right_m_n(p);
         Self::find_mirror_horz::<TARGET>(&p)
     }
-}
-
-fn rotate(matrix: &[Vec<u8>]) -> Vec<Vec<u8>> {
-    let rows = matrix.len();
-    let cols = matrix[0].len();
-
-    let mut rotated_matrix = vec![vec![0; rows]; cols];
-
-    for i in 0..rows {
-        for (j, &cell) in matrix[rows - 1 - i].iter().enumerate() {
-            rotated_matrix[j][i] = cell;
-        }
-    }
-
-    rotated_matrix
 }
 
 #[aoc_generator(day13)]
