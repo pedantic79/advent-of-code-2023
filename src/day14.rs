@@ -4,14 +4,14 @@ use rustc_hash::FxHashMap as HashMap;
 
 const TARGET: usize = 1_000_000_000;
 
-#[derive(PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash, Clone)]
 pub struct Dish {
-    dish: Vec<Vec<u8>>,
+    grid: Vec<Vec<u8>>,
 }
 
 impl std::fmt::Debug for Dish {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for row in &self.dish {
+        for row in &self.grid {
             writeln!(f, "{}", String::from_utf8_lossy(row))?;
         }
 
@@ -19,114 +19,122 @@ impl std::fmt::Debug for Dish {
     }
 }
 
+impl Dish {
+    fn roll_north(&mut self) {
+        for c in 0..self.grid[0].len() {
+            for r in 0..self.grid.len() {
+                if self.grid[r][c] == b'O' {
+                    if let Some(new_row) =
+                        (0..r).rev().take_while(|&x| self.grid[x][c] == b'.').last()
+                    {
+                        self.grid[r][c] = b'.';
+                        self.grid[new_row][c] = b'O';
+                    }
+                }
+            }
+        }
+    }
+
+    fn roll_west(&mut self) {
+        let width = self.grid[0].len();
+        for gridr in self.grid.iter_mut() {
+            for c in 0..width {
+                if gridr[c] == b'O' {
+                    if let Some(new_col) = (0..c).rev().take_while(|x| gridr[*x] == b'.').last() {
+                        gridr[c] = b'.';
+                        gridr[new_col] = b'O';
+                    }
+                }
+            }
+        }
+    }
+
+    fn roll_south(&mut self) {
+        let height = self.grid.len();
+        for c in 0..self.grid[0].len() {
+            for r in (0..height).rev() {
+                if self.grid[r][c] == b'O' {
+                    if let Some(new_row) = (r + 1..height)
+                        .take_while(|x| self.grid[*x][c] == b'.')
+                        .last()
+                    {
+                        self.grid[r][c] = b'.';
+                        self.grid[new_row][c] = b'O';
+                    }
+                }
+            }
+        }
+    }
+
+    fn roll_east(&mut self) {
+        let width = self.grid[0].len();
+        for gridr in self.grid.iter_mut() {
+            for c in (0..width).rev() {
+                if gridr[c] == b'O' {
+                    if let Some(new_col) = (c + 1..width).take_while(|x| gridr[*x] == b'.').last() {
+                        gridr[c] = b'.';
+                        gridr[new_col] = b'O';
+                    }
+                }
+            }
+        }
+    }
+
+    fn cycle(&mut self) {
+        self.roll_north();
+        self.roll_west();
+        self.roll_south();
+        self.roll_east();
+    }
+
+    fn load(&self) -> usize {
+        self.grid
+            .iter()
+            .enumerate()
+            .map(|(r, row)| {
+                row.iter()
+                    .filter_map(|&cell| (cell == b'O').then_some(self.grid.len() - r))
+                    .sum::<usize>()
+            })
+            .sum()
+    }
+}
+
 #[aoc_generator(day14)]
 pub fn generator(input: &str) -> Dish {
     Dish {
-        dish: input.lines().map(|line| line.bytes().collect()).collect(),
+        grid: input.lines().map(|line| line.bytes().collect()).collect(),
     }
-}
-
-fn roll_north(grid: &mut Vec<Vec<u8>>) {
-    for c in 0..grid[0].len() {
-        for r in 0..grid.len() {
-            if grid[r][c] == b'O' {
-                if let Some(new_row) = (0..r).rev().take_while(|&x| grid[x][c] == b'.').last() {
-                    grid[r][c] = b'.';
-                    grid[new_row][c] = b'O';
-                }
-            }
-        }
-    }
-}
-
-fn roll_west(grid: &mut [Vec<u8>]) {
-    let width = grid[0].len();
-    for gridr in grid.iter_mut() {
-        for c in 0..width {
-            if gridr[c] == b'O' {
-                if let Some(new_col) = (0..c).rev().take_while(|x| gridr[*x] == b'.').last() {
-                    gridr[c] = b'.';
-                    gridr[new_col] = b'O';
-                }
-            }
-        }
-    }
-}
-
-fn roll_south(grid: &mut Vec<Vec<u8>>) {
-    let height = grid.len();
-    for c in 0..grid[0].len() {
-        for r in (0..height).rev() {
-            if grid[r][c] == b'O' {
-                if let Some(new_row) = (r + 1..height).take_while(|x| grid[*x][c] == b'.').last() {
-                    grid[r][c] = b'.';
-                    grid[new_row][c] = b'O';
-                }
-            }
-        }
-    }
-}
-
-fn roll_east(grid: &mut [Vec<u8>]) {
-    let width = grid[0].len();
-    for gridr in grid.iter_mut() {
-        for c in (0..width).rev() {
-            if gridr[c] == b'O' {
-                if let Some(new_col) = (c + 1..width).take_while(|x| gridr[*x] == b'.').last() {
-                    gridr[c] = b'.';
-                    gridr[new_col] = b'O';
-                }
-            }
-        }
-    }
-}
-
-fn cycle(grid: &mut Vec<Vec<u8>>) {
-    roll_north(grid);
-    roll_west(grid);
-    roll_south(grid);
-    roll_east(grid);
-}
-
-fn load(grid: &Vec<Vec<u8>>) -> usize {
-    grid.iter()
-        .enumerate()
-        .map(|(r, row)| {
-            row.iter()
-                .filter_map(|&cell| (cell == b'O').then_some(grid.len() - r))
-                .sum::<usize>()
-        })
-        .sum()
 }
 
 #[aoc(day14, part1)]
 pub fn part1(platform: &Dish) -> usize {
-    let mut dish = platform.dish.to_vec();
+    let mut platform = platform.clone();
 
-    roll_north(&mut dish);
-    load(&dish)
+    platform.roll_north();
+    platform.load()
 }
 
 #[aoc(day14, part2)]
 pub fn part2(platform: &Dish) -> usize {
-    let mut dish = platform.dish.to_vec();
+    let mut platform = platform.clone();
     let mut seen = HashMap::new();
 
     let mut t = 0;
     while t < TARGET {
         t += 1;
-        cycle(&mut dish);
+        platform.cycle();
 
-        if let Some(old) = seen.get(&dish) {
+        if let Some(old) = seen.get(&platform.grid) {
             let cyc = t - old;
             let amt = (TARGET - t) / cyc;
             t += amt * cyc;
         }
 
-        seen.insert(dish.clone(), t);
+        seen.insert(platform.grid.clone(), t);
     }
 
-    load(&dish)
+    platform.load()
 }
 
 #[cfg(test)]
