@@ -2,7 +2,6 @@ use ahash::HashMapExt;
 use aoc_runner_derive::{aoc, aoc_generator};
 use rustc_hash::FxHashMap as HashMap;
 
-use crate::common::matrix::rotate_right;
 const TARGET: usize = 1_000_000_000;
 
 #[derive(PartialEq, Eq, Hash)]
@@ -27,24 +26,109 @@ pub fn generator(input: &str) -> Dish {
     }
 }
 
-fn roll(grid: &mut Vec<Vec<u8>>) {
+fn roll_north(grid: &mut Vec<Vec<u8>>) {
     for c in 0..grid[0].len() {
+        let mut last: Option<usize> = None;
         for r in 0..grid.len() {
             if grid[r][c] == b'O' {
-                if let Some(new_row) = (0..r).rev().take_while(|&x| grid[x][c] == b'.').last() {
+                if let Some(new_row) = last {
                     grid[r][c] = b'.';
                     grid[new_row][c] = b'O';
+                    last = Some(new_row + 1);
+                } else if let Some(new_row) =
+                    (0..r).rev().take_while(|&x| grid[x][c] == b'.').last()
+                {
+                    grid[r][c] = b'.';
+                    grid[new_row][c] = b'O';
+                    last = Some(new_row + 1);
                 }
+            } else {
+                last = None;
+            }
+        }
+    }
+}
+
+fn roll_west(grid: &mut Vec<Vec<u8>>) {
+    for r in 0..grid.len() {
+        let mut last: Option<usize> = None;
+
+        for c in 0..grid[0].len() {
+            if grid[r][c] == b'O' {
+                if let Some(new_col) = last {
+                    grid[r][c] = b'.';
+                    grid[r][new_col] = b'O';
+                    last = Some(new_col + 1);
+                } else if let Some(new_col) =
+                    (0..c).rev().take_while(|x| grid[r][*x] == b'.').last()
+                {
+                    grid[r][c] = b'.';
+                    grid[r][new_col] = b'O';
+                    last = Some(new_col + 1);
+                }
+            } else {
+                last = None;
+            }
+        }
+    }
+}
+
+fn roll_south(grid: &mut Vec<Vec<u8>>) {
+    let height = grid.len();
+
+    for c in 0..grid[0].len() {
+        let mut last: Option<usize> = None;
+
+        for r in (0..height).rev() {
+            if grid[r][c] == b'O' {
+                if let Some(new_row) = last {
+                    grid[r][c] = b'.';
+                    grid[new_row][c] = b'O';
+                    last = Some(new_row - 1);
+                } else if let Some(new_row) =
+                    (r + 1..height).take_while(|x| grid[*x][c] == b'.').last()
+                {
+                    grid[r][c] = b'.';
+                    grid[new_row][c] = b'O';
+                    last = Some(new_row - 1);
+                }
+            } else {
+                last = None;
+            }
+        }
+    }
+}
+
+fn roll_east(grid: &mut Vec<Vec<u8>>) {
+    let width = grid[0].len();
+    for gridr in grid.iter_mut() {
+        let mut last: Option<usize> = None;
+
+        for c in (0..width).rev() {
+            if gridr[c] == b'O' {
+                if let Some(new_col) = last {
+                    gridr[c] = b'.';
+                    gridr[new_col] = b'O';
+                    last = Some(new_col - 1);
+                } else if let Some(new_col) =
+                    (c + 1..width).take_while(|x| gridr[*x] == b'.').last()
+                {
+                    gridr[c] = b'.';
+                    gridr[new_col] = b'O';
+                    last = Some(new_col - 1);
+                }
+            } else {
+                last = None;
             }
         }
     }
 }
 
 fn cycle(grid: &mut Vec<Vec<u8>>) {
-    for _ in 0..4 {
-        roll(grid);
-        rotate_right(grid);
-    }
+    roll_north(grid);
+    roll_west(grid);
+    roll_south(grid);
+    roll_east(grid);
 }
 
 fn load(grid: &Vec<Vec<u8>>) -> usize {
@@ -62,7 +146,7 @@ fn load(grid: &Vec<Vec<u8>>) -> usize {
 pub fn part1(platform: &Dish) -> usize {
     let mut dish = platform.dish.to_vec();
 
-    roll(&mut dish);
+    roll_north(&mut dish);
     load(&dish)
 }
 
