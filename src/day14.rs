@@ -28,46 +28,26 @@ pub fn generator(input: &str) -> Dish {
 
 fn roll_north(grid: &mut Vec<Vec<u8>>) {
     for c in 0..grid[0].len() {
-        let mut last: Option<usize> = None;
         for r in 0..grid.len() {
             if grid[r][c] == b'O' {
-                if let Some(new_row) = last {
+                if let Some(new_row) = (0..r).rev().take_while(|&x| grid[x][c] == b'.').last() {
                     grid[r][c] = b'.';
                     grid[new_row][c] = b'O';
-                    last = Some(new_row + 1);
-                } else if let Some(new_row) =
-                    (0..r).rev().take_while(|&x| grid[x][c] == b'.').last()
-                {
-                    grid[r][c] = b'.';
-                    grid[new_row][c] = b'O';
-                    last = Some(new_row + 1);
                 }
-            } else {
-                last = None;
             }
         }
     }
 }
 
-fn roll_west(grid: &mut Vec<Vec<u8>>) {
-    for r in 0..grid.len() {
-        let mut last: Option<usize> = None;
-
-        for c in 0..grid[0].len() {
-            if grid[r][c] == b'O' {
-                if let Some(new_col) = last {
-                    grid[r][c] = b'.';
-                    grid[r][new_col] = b'O';
-                    last = Some(new_col + 1);
-                } else if let Some(new_col) =
-                    (0..c).rev().take_while(|x| grid[r][*x] == b'.').last()
-                {
-                    grid[r][c] = b'.';
-                    grid[r][new_col] = b'O';
-                    last = Some(new_col + 1);
+fn roll_west(grid: &mut [Vec<u8>]) {
+    let width = grid[0].len();
+    for gridr in grid.iter_mut() {
+        for c in 0..width {
+            if gridr[c] == b'O' {
+                if let Some(new_col) = (0..c).rev().take_while(|x| gridr[*x] == b'.').last() {
+                    gridr[c] = b'.';
+                    gridr[new_col] = b'O';
                 }
-            } else {
-                last = None;
             }
         }
     }
@@ -75,50 +55,27 @@ fn roll_west(grid: &mut Vec<Vec<u8>>) {
 
 fn roll_south(grid: &mut Vec<Vec<u8>>) {
     let height = grid.len();
-
     for c in 0..grid[0].len() {
-        let mut last: Option<usize> = None;
-
         for r in (0..height).rev() {
             if grid[r][c] == b'O' {
-                if let Some(new_row) = last {
+                if let Some(new_row) = (r + 1..height).take_while(|x| grid[*x][c] == b'.').last() {
                     grid[r][c] = b'.';
                     grid[new_row][c] = b'O';
-                    last = Some(new_row - 1);
-                } else if let Some(new_row) =
-                    (r + 1..height).take_while(|x| grid[*x][c] == b'.').last()
-                {
-                    grid[r][c] = b'.';
-                    grid[new_row][c] = b'O';
-                    last = Some(new_row - 1);
                 }
-            } else {
-                last = None;
             }
         }
     }
 }
 
-fn roll_east(grid: &mut Vec<Vec<u8>>) {
+fn roll_east(grid: &mut [Vec<u8>]) {
     let width = grid[0].len();
     for gridr in grid.iter_mut() {
-        let mut last: Option<usize> = None;
-
         for c in (0..width).rev() {
             if gridr[c] == b'O' {
-                if let Some(new_col) = last {
+                if let Some(new_col) = (c + 1..width).take_while(|x| gridr[*x] == b'.').last() {
                     gridr[c] = b'.';
                     gridr[new_col] = b'O';
-                    last = Some(new_col - 1);
-                } else if let Some(new_col) =
-                    (c + 1..width).take_while(|x| gridr[*x] == b'.').last()
-                {
-                    gridr[c] = b'.';
-                    gridr[new_col] = b'O';
-                    last = Some(new_col - 1);
                 }
-            } else {
-                last = None;
             }
         }
     }
