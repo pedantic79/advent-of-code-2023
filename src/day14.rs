@@ -22,75 +22,54 @@ impl std::fmt::Debug for Dish {
 }
 
 impl Dish {
-    fn roll_north(&mut self) {
-        let w = self.width;
-        for c in 0..w {
-            for r in 0..self.height {
-                if self.grid[r * w + c] == b'O' {
-                    if let Some(new_row) = (0..r)
-                        .rev()
-                        .take_while(|&x| self.grid[x * w + c] == b'.')
-                        .last()
-                    {
-                        self.grid[r * w + c] = b'.';
-                        self.grid[new_row * w + c] = b'O';
+    fn roll(
+        &mut self,
+        x: impl IntoIterator<Item = usize>,
+        y: impl IntoIterator<Item = usize> + Clone,
+        f: impl Fn(usize, usize) -> usize,
+        offset: u8,
+    ) {
+        let mut available_slots = [u8::MAX; 100];
+        for x in x {
+            for y in y.clone() {
+                let idx = f(x, y);
+                let slot = &mut available_slots[y];
+
+                match self.grid[idx] {
+                    b'.' if *slot == u8::MAX => *slot = x as u8,
+                    b'#' => *slot = u8::MAX,
+                    b'O' if *slot != u8::MAX => {
+                        self.grid[idx] = b'.';
+                        self.grid[f(usize::from(*slot), y)] = b'O';
+                        *slot = slot.wrapping_add(offset);
                     }
+                    _ => {}
                 }
             }
         }
+    }
+
+    fn roll_north(&mut self) {
+        let w = self.width;
+        self.roll(0..self.height, 0..w, |r, c| r * w + c, 1);
     }
 
     fn roll_west(&mut self) {
         let w = self.width;
-        for r in 0..self.height {
-            for c in 0..w {
-                if self.grid[r * w + c] == b'O' {
-                    if let Some(new_col) = (0..c)
-                        .rev()
-                        .take_while(|&x| self.grid[r * w + x] == b'.')
-                        .last()
-                    {
-                        self.grid[r * w + c] = b'.';
-                        self.grid[r * w + new_col] = b'O';
-                    }
-                }
-            }
-        }
+        self.roll(0..w, 0..self.height, |c, r| r * w + c, 1);
     }
 
     fn roll_south(&mut self) {
-        let height = self.height;
         let w = self.width;
-        for c in 0..w {
-            for r in (0..height).rev() {
-                if self.grid[r * w + c] == b'O' {
-                    if let Some(new_row) = (r + 1..height)
-                        .take_while(|&x| self.grid[x * w + c] == b'.')
-                        .last()
-                    {
-                        self.grid[r * w + c] = b'.';
-                        self.grid[new_row * w + c] = b'O';
-                    }
-                }
-            }
-        }
+        let h = self.height;
+        // 0u8.wrapping_sub(1) is -1
+        self.roll((0..h).rev(), 0..w, |r, c| r * w + c, 0u8.wrapping_sub(1));
     }
 
     fn roll_east(&mut self) {
         let w = self.width;
-        for r in 0..self.height {
-            for c in (0..w).rev() {
-                if self.grid[r * w + c] == b'O' {
-                    if let Some(new_col) = (c + 1..w)
-                        .take_while(|&x| self.grid[r * w + x] == b'.')
-                        .last()
-                    {
-                        self.grid[r * w + c] = b'.';
-                        self.grid[r * w + new_col] = b'O';
-                    }
-                }
-            }
-        }
+        let h = self.height;
+        self.roll((0..w).rev(), 0..h, |c, r| r * w + c, 0u8.wrapping_sub(1));
     }
 
     fn cycle(&mut self) {
@@ -107,8 +86,7 @@ impl Dish {
 
             let row_offset = row * self.width;
             for col in 0..self.width {
-                let col_offset = row_offset + col;
-                if self.grid[col_offset] == b'O' {
+                if self.grid[row_offset + col] == b'O' {
                     sum += mult;
                 }
             }
@@ -121,7 +99,7 @@ impl Dish {
 pub fn generator(input: &str) -> Dish {
     let width = input.find('\n').unwrap();
     let height = input.len() / width;
-    let mut grid = Vec::new();
+    let mut grid = Vec::with_capacity(width * height);
     for line in input.lines() {
         grid.extend(line.bytes());
     }
@@ -144,7 +122,7 @@ pub fn part1(platform: &Dish) -> usize {
 #[aoc(day14, part2)]
 pub fn part2(platform: &Dish) -> usize {
     let mut platform = platform.clone();
-    let mut seen = HashMap::new();
+    let mut seen = HashMap::with_capacity(256);
 
     let mut t = 0;
     while t < TARGET {
