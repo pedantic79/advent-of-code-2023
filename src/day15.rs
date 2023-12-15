@@ -4,13 +4,8 @@ use aoc_runner_derive::aoc;
 pub struct Object {}
 
 fn calc_hash(s: &str) -> usize {
-    s.bytes().fold(0, |mut current, n| {
-        let n = usize::from(n);
-        current += n;
-        current *= 17;
-        current %= 256;
-        current
-    })
+    s.bytes()
+        .fold(0, |current, n| (current + usize::from(n)) * 17 % 256)
 }
 
 // #[aoc_generator(day15)]
@@ -30,20 +25,20 @@ pub fn part2(inputs: &str) -> usize {
     for operation in inputs.split(',') {
         if let Some((label, focal_length)) = operation.split_once('=') {
             let focal_length: usize = focal_length.parse().unwrap();
-            let label_num = calc_hash(label);
+            let hash = calc_hash(label);
 
-            if let Some(p) = boxes[label_num]
+            if let Some(fl) = boxes[hash]
                 .iter_mut()
-                .find_map(|(l, p)| (*l == label).then_some(p))
+                .find_map(|(l, fl)| (*l == label).then_some(fl))
             {
-                *p = focal_length;
+                *fl = focal_length;
             } else {
-                boxes[label_num].push((label, focal_length));
+                boxes[hash].push((label, focal_length));
             }
         } else if let Some(label) = operation.strip_suffix('-') {
-            let label_num = calc_hash(label);
-            if let Some(pos) = boxes[label_num].iter().position(|x| x.0 == label) {
-                boxes[label_num].remove(pos);
+            let hash = calc_hash(label);
+            if let Some(pos) = boxes[hash].iter().position(|x| x.0 == label) {
+                boxes[hash].remove(pos);
             }
         } else {
             panic!("unknown input `{operation}`");
