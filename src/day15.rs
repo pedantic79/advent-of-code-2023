@@ -1,7 +1,6 @@
 use aoc_runner_derive::aoc;
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct Object {}
+type Vec<T> = arrayvec::ArrayVec<T, 8>;
 
 fn calc_hash(s: &str) -> usize {
     s.bytes()
@@ -21,7 +20,7 @@ pub fn part1(input: &str) -> usize {
 
 #[aoc(day15, part2)]
 pub fn part2(inputs: &str) -> usize {
-    let mut boxes: [_; 256] = std::array::from_fn(|_| Vec::with_capacity(8));
+    let mut boxes: [_; 256] = std::array::from_fn(|_| Vec::new());
     for operation in inputs.split(',') {
         if let Some((label, focal_length)) = operation.split_once('=') {
             let focal_length: usize = focal_length.parse().unwrap();
