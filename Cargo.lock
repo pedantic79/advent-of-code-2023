@@ -13,6 +13,7 @@ dependencies = [
  "bit-set",
  "bitvec",
  "gxhash",
+ "indexmap",
  "itertools",
  "lazy_static",
  "nohash-hasher",

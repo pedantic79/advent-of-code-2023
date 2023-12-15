@@ -1,4 +1,8 @@
+use std::hash::BuildHasherDefault;
+
 use aoc_runner_derive::aoc;
+
+type IndexMap<K, V> = indexmap::IndexMap<K, V, BuildHasherDefault<rustc_hash::FxHasher>>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Object {}
@@ -25,25 +29,20 @@ pub fn part1(input: &str) -> usize {
 
 #[aoc(day15, part2)]
 pub fn part2(inputs: &str) -> usize {
-    let mut boxes: [_; 256] = std::array::from_fn(|_| Vec::new());
-    'outer: for operation in inputs.split(',') {
+    let mut boxes: [IndexMap<&str, usize>; 256] = std::array::from_fn(|_| IndexMap::default());
+    for operation in inputs.split(',') {
         if let Some((label, focal_length)) = operation.split_once('=') {
             let focal_length = focal_length.parse::<usize>().unwrap();
             let label_num = calc_hash(label);
-            for (l, p) in boxes[label_num].iter_mut() {
-                if *l == label {
-                    *p = focal_length;
-                    continue 'outer;
-                }
-            }
 
-            // Was not found
-            boxes[label_num].push((label, focal_length));
+            if let Some(p) = boxes[label_num].get_mut(label) {
+                *p = focal_length;
+            } else {
+                boxes[label_num].insert(label, focal_length);
+            }
         } else if let Some(label) = operation.strip_suffix('-') {
             let label_num = calc_hash(label);
-            if let Some(pos) = boxes[label_num].iter().position(|x| x.0 == label) {
-                boxes[label_num].remove(pos);
-            }
+            boxes[label_num].shift_remove_entry(label);
         }
     }
 
