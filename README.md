@@ -26,8 +26,10 @@
   - [solution](src/day12.rs)
 - [Day 13: Point of Incidence](https://adventofcode.com/2023/day/13)
   - [solution](src/day13.rs)
-- [Day 14:](https://adventofcode.com/2023/day/14)
+- [Day 14: Parabolic Reflector Dish](https://adventofcode.com/2023/day/14)
   - [solution](src/day14.rs)
+- [Day 15: Lens Library](https://adventofcode.com/2023/day/15)
+  - [solution](src/day15.rs)
 <!-- Insert before -->
 
 See:
