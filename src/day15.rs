@@ -22,7 +22,12 @@ pub fn part1(input: &str) -> usize {
 pub fn part2(inputs: &str) -> usize {
     let mut boxes: [_; 256] = std::array::from_fn(|_| Vec::new());
     for operation in inputs.split(',') {
-        if let Some((label, focal_length)) = operation.split_once('=') {
+        if let Some(label) = operation.strip_suffix('-') {
+            let hash = calc_hash(label);
+            if let Some(pos) = boxes[hash].iter().position(|(l, _)| *l == label) {
+                boxes[hash].remove(pos);
+            }
+        } else if let Some((label, focal_length)) = operation.split_once('=') {
             let focal_length: usize = focal_length.parse().unwrap();
             let hash = calc_hash(label);
 
@@ -33,11 +38,6 @@ pub fn part2(inputs: &str) -> usize {
                 *fl = focal_length;
             } else {
                 boxes[hash].push((label, focal_length));
-            }
-        } else if let Some(label) = operation.strip_suffix('-') {
-            let hash = calc_hash(label);
-            if let Some(pos) = boxes[hash].iter().position(|x| x.0 == label) {
-                boxes[hash].remove(pos);
             }
         } else {
             panic!("unknown input `{operation}`");
