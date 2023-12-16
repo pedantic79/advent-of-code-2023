@@ -30,6 +30,8 @@
   - [solution](src/day14.rs)
 - [Day 15: Lens Library](https://adventofcode.com/2023/day/15)
   - [solution](src/day15.rs)
+- [Day 16: The Floor Will Be Lava](https://adventofcode.com/2023/day/16)
+  - [solution](src/day16.rs)
 <!-- Insert before -->
 
 See:
