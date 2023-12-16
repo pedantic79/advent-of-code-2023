@@ -1,9 +1,7 @@
-use std::collections::VecDeque;
-
 use aoc_runner_derive::{aoc, aoc_generator};
 use rayon::iter::{ParallelBridge, ParallelIterator};
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Object {
     Empty,
     Slash,
@@ -44,7 +42,7 @@ impl Object {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Dir {
     North,
     West,
@@ -92,12 +90,12 @@ pub fn generator(input: &str) -> Vec<Vec<Object>> {
 }
 
 fn solve(inputs: &[Vec<Object>], start: ((usize, usize), Dir)) -> usize {
-    let mut queue = VecDeque::new();
+    let mut queue = Vec::new();
     let mut seen = vec![vec![0; inputs[0].len()]; inputs.len()];
 
-    queue.push_back(start);
+    queue.push(start);
 
-    while let Some((pos, dir)) = queue.pop_front() {
+    while let Some((pos, dir)) = queue.pop() {
         if let Some(kind) = inputs.get(pos.0).and_then(|row| row.get(pos.1)) {
             if seen[pos.0][pos.1] & dir.get_mask() > 0 {
                 continue;
@@ -105,14 +103,14 @@ fn solve(inputs: &[Vec<Object>], start: ((usize, usize), Dir)) -> usize {
 
             seen[pos.0][pos.1] |= dir.get_mask();
             match kind {
-                Object::Empty => queue.push_back((dir.next_pos(pos), dir)),
+                Object::Empty => queue.push((dir.next_pos(pos), dir)),
                 Object::Slash | Object::BackSlash => {
                     let new_dir = kind.next_dir(&dir);
-                    queue.push_back((new_dir.next_pos(pos), new_dir));
+                    queue.push((new_dir.next_pos(pos), new_dir));
                 }
                 Object::Pipe | Object::Dash => {
                     for next in kind.next_split(dir, pos).into_iter().flatten() {
-                        queue.push_back(next);
+                        queue.push(next);
                     }
                 }
             }
