@@ -1,7 +1,9 @@
 use std::collections::VecDeque;
 
-use ahash::{HashSet, HashSetExt};
+use ahash::HashSetExt;
 use aoc_runner_derive::{aoc, aoc_generator};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use rustc_hash::FxHashSet as HashSet;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Object {
@@ -154,19 +156,27 @@ pub fn part1(inputs: &[Vec<Object>]) -> usize {
 pub fn part2(inputs: &Vec<Vec<Object>>) -> usize {
     let height = inputs.len();
     let width = inputs[0].len();
-    let mut max = usize::MIN;
 
-    for r in 0..height {
-        max = max.max(solve(inputs, ((r, 0), Direction::East)));
-        max = max.max(solve(inputs, ((r, width - 1), Direction::West)));
-    }
-
-    for c in 0..width {
-        max = max.max(solve(inputs, ((0, c), Direction::South)));
-        max = max.max(solve(inputs, ((height - 1, c), Direction::North)));
-    }
-
-    max
+    (0..height)
+        .into_par_iter()
+        .map(|r| solve(inputs, ((r, 0), Direction::East)))
+        .chain(
+            (0..height)
+                .into_par_iter()
+                .map(|r| solve(inputs, ((r, width - 1), Direction::West))),
+        )
+        .chain(
+            (0..width)
+                .into_par_iter()
+                .map(|c| solve(inputs, ((0, c), Direction::South))),
+        )
+        .chain(
+            (0..width)
+                .into_par_iter()
+                .map(|c| solve(inputs, ((height - 1, c), Direction::North))),
+        )
+        .max()
+        .unwrap()
 }
 
 #[cfg(test)]
