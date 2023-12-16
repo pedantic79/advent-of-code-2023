@@ -1,9 +1,7 @@
 use std::collections::VecDeque;
 
-use ahash::HashSetExt;
 use aoc_runner_derive::{aoc, aoc_generator};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
-use rustc_hash::FxHashSet as HashSet;
+use rayon::iter::{ParallelBridge, ParallelIterator};
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum Object {
@@ -14,50 +12,32 @@ pub enum Object {
     Dash,
 }
 
-fn up((y, x): (usize, usize)) -> (usize, usize) {
-    (y.wrapping_sub(1), x)
-}
-
-fn left((y, x): (usize, usize)) -> (usize, usize) {
-    (y, x.wrapping_sub(1))
-}
-
 impl Object {
-    fn next_dir(&self, d: &Direction) -> Direction {
+    fn next_dir(&self, d: &Dir) -> Dir {
         match (self, d) {
-            (Object::BackSlash, Direction::North) => Direction::West,
-            (Object::BackSlash, Direction::West) => Direction::North,
-            (Object::BackSlash, Direction::South) => Direction::East,
-            (Object::BackSlash, Direction::East) => Direction::South,
-            (Object::Slash, Direction::North) => Direction::East,
-            (Object::Slash, Direction::West) => Direction::South,
-            (Object::Slash, Direction::South) => Direction::West,
-            (Object::Slash, Direction::East) => Direction::North,
+            (Object::BackSlash, Dir::North) => Dir::West,
+            (Object::BackSlash, Dir::West) => Dir::North,
+            (Object::BackSlash, Dir::South) => Dir::East,
+            (Object::BackSlash, Dir::East) => Dir::South,
+            (Object::Slash, Dir::North) => Dir::East,
+            (Object::Slash, Dir::West) => Dir::South,
+            (Object::Slash, Dir::South) => Dir::West,
+            (Object::Slash, Dir::East) => Dir::North,
             _ => unreachable!("don't pass a non-mirror"),
         }
     }
 
-    fn next_split(
-        &self,
-        d: &Direction,
-        (y, x): (usize, usize),
-    ) -> [Option<((usize, usize), Direction)>; 2] {
+    fn next_split(&self, d: Dir, pos: (usize, usize)) -> [Option<((usize, usize), Dir)>; 2] {
         match (self, d) {
-            (Object::Pipe, Direction::North) => {
-                [Some((d.next_pos((y, x)), Direction::North)), None]
-            }
-            (Object::Pipe, Direction::South) => {
-                [Some((d.next_pos((y, x)), Direction::South)), None]
-            }
-            (Object::Dash, Direction::West) => [Some((d.next_pos((y, x)), Direction::West)), None],
-            (Object::Dash, Direction::East) => [Some((d.next_pos((y, x)), Direction::East)), None],
-            (Object::Pipe, Direction::West | Direction::East) => [
-                Some((up((y, x)), Direction::North)),
-                Some(((y + 1, x), Direction::South)),
+            (Object::Pipe, Dir::North | Dir::South) => [Some((d.next_pos(pos), d)), None],
+            (Object::Dash, Dir::West | Dir::East) => [Some((d.next_pos(pos), d)), None],
+            (Object::Pipe, Dir::West | Dir::East) => [
+                Some((Dir::North.next_pos(pos), Dir::North)),
+                Some((Dir::South.next_pos(pos), Dir::South)),
             ],
-            (Object::Dash, Direction::North | Direction::South) => [
-                Some((left((y, x)), Direction::West)),
-                Some(((y, x + 1), Direction::East)),
+            (Object::Dash, Dir::North | Dir::South) => [
+                Some((Dir::West.next_pos(pos), Dir::West)),
+                Some((Dir::East.next_pos(pos), Dir::East)),
             ],
             _ => unreachable!("don't pass a non-splitter"),
         }
@@ -65,20 +45,29 @@ impl Object {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
-pub enum Direction {
+pub enum Dir {
     North,
     West,
     South,
     East,
 }
 
-impl Direction {
+impl Dir {
     fn next_pos(&self, (y, x): (usize, usize)) -> (usize, usize) {
         match self {
-            Direction::North => up((y, x)),
-            Direction::West => left((y, x)),
-            Direction::South => (y + 1, x),
-            Direction::East => (y, x + 1),
+            Dir::North => (y.wrapping_sub(1), x),
+            Dir::West => (y, x.wrapping_sub(1)),
+            Dir::South => (y + 1, x),
+            Dir::East => (y, x + 1),
+        }
+    }
+
+    fn get_mask(&self) -> u8 {
+        match self {
+            Dir::North => 0b0001,
+            Dir::West => 0b0010,
+            Dir::South => 0b0100,
+            Dir::East => 0b1000,
         }
     }
 }
@@ -102,54 +91,42 @@ pub fn generator(input: &str) -> Vec<Vec<Object>> {
         .collect()
 }
 
-fn solve(inputs: &[Vec<Object>], start: ((usize, usize), Direction)) -> usize {
-    let mut seen = HashSet::new();
+fn solve(inputs: &[Vec<Object>], start: ((usize, usize), Dir)) -> usize {
     let mut queue = VecDeque::new();
+    let mut seen = vec![vec![0; inputs[0].len()]; inputs.len()];
+
     queue.push_back(start);
 
     while let Some((pos, dir)) = queue.pop_front() {
         if let Some(kind) = inputs.get(pos.0).and_then(|row| row.get(pos.1)) {
-            if seen.contains(&(pos, dir)) {
+            if seen[pos.0][pos.1] & dir.get_mask() > 0 {
                 continue;
             }
-            seen.insert((pos, dir));
+
+            seen[pos.0][pos.1] |= dir.get_mask();
             match kind {
                 Object::Empty => queue.push_back((dir.next_pos(pos), dir)),
                 Object::Slash | Object::BackSlash => {
                     let new_dir = kind.next_dir(&dir);
                     queue.push_back((new_dir.next_pos(pos), new_dir));
                 }
-                Object::Pipe => {
-                    let [u, d] = kind.next_split(&dir, pos);
-                    if let Some(u) = u {
-                        queue.push_back(u);
-                    }
-
-                    if let Some(d) = d {
-                        queue.push_back(d);
-                    }
-                }
-                Object::Dash => {
-                    let [l, r] = kind.next_split(&dir, pos);
-                    if let Some(l) = l {
-                        queue.push_back(l);
-                    }
-
-                    if let Some(r) = r {
-                        queue.push_back(r);
+                Object::Pipe | Object::Dash => {
+                    for next in kind.next_split(dir, pos).into_iter().flatten() {
+                        queue.push_back(next);
                     }
                 }
             }
         }
     }
 
-    let seen: HashSet<_> = seen.into_iter().map(|x| x.0).collect();
-    seen.len()
+    seen.iter()
+        .map(|row| row.iter().filter(|&&x| x > 0).count())
+        .sum()
 }
 
 #[aoc(day16, part1)]
 pub fn part1(inputs: &[Vec<Object>]) -> usize {
-    solve(inputs, ((0, 0), Direction::East))
+    solve(inputs, ((0, 0), Dir::East))
 }
 
 #[aoc(day16, part2)]
@@ -158,23 +135,12 @@ pub fn part2(inputs: &Vec<Vec<Object>>) -> usize {
     let width = inputs[0].len();
 
     (0..height)
-        .into_par_iter()
-        .map(|r| solve(inputs, ((r, 0), Direction::East)))
-        .chain(
-            (0..height)
-                .into_par_iter()
-                .map(|r| solve(inputs, ((r, width - 1), Direction::West))),
-        )
-        .chain(
-            (0..width)
-                .into_par_iter()
-                .map(|c| solve(inputs, ((0, c), Direction::South))),
-        )
-        .chain(
-            (0..width)
-                .into_par_iter()
-                .map(|c| solve(inputs, ((height - 1, c), Direction::North))),
-        )
+        .map(|r| ((r, 0), Dir::East))
+        .chain((0..height).map(|r| ((r, width - 1), Dir::West)))
+        .chain((0..width).map(|c| ((0, c), Dir::South)))
+        .chain((0..width).map(|c| ((height - 1, c), Dir::North)))
+        .par_bridge()
+        .map(|x| solve(inputs, x))
         .max()
         .unwrap()
 }
@@ -198,7 +164,7 @@ mod tests {
     pub fn input_test() {
         println!("{:?}", generator(SAMPLE));
 
-        println!("{}", solve(&generator(SAMPLE), ((0, 3), Direction::South)));
+        println!("{}", solve(&generator(SAMPLE), ((0, 3), Dir::South)));
 
         // assert_eq!(generator(SAMPLE), Object());
     }
