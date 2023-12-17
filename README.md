@@ -32,6 +32,8 @@
   - [solution](src/day15.rs)
 - [Day 16: The Floor Will Be Lava](https://adventofcode.com/2023/day/16)
   - [solution](src/day16.rs)
+- [Day 17: Clumsy Crucible](https://adventofcode.com/2023/day/17)
+  - [solution](src/day17.rs)
 <!-- Insert before -->
 
 See:
