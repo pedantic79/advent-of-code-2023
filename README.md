@@ -34,6 +34,8 @@
   - [solution](src/day16.rs)
 - [Day 17: Clumsy Crucible](https://adventofcode.com/2023/day/17)
   - [solution](src/day17.rs)
+- [Day 18: Lavaduct Lagoon](https://adventofcode.com/2023/day/18)
+  - [solution](src/day18.rs)
 <!-- Insert before -->
 
 See:
