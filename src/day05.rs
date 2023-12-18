@@ -1,12 +1,9 @@
-use std::{
-    cmp::{max, min},
-    ops::Range,
-};
+use std::ops::Range;
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 
-use crate::common::utils::parse_split;
+use crate::common::{range_overlap, utils::parse_split};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct IndividualMapper {
@@ -36,26 +33,21 @@ impl GroupMapper {
     ) {
         for mapper in &self.mappers {
             while let Some(range) = input.pop() {
-                let before = range.start..min(range.end, mapper.source.start);
-                let inter = (
-                    max(range.start, mapper.source.start),
-                    min(mapper.source.end, range.end),
-                );
-                let after = max(mapper.source.end, range.start)..range.end;
+                let [before, inter, after] = range_overlap(range, mapper.source.clone());
 
-                if before.end > before.start {
+                if let Some(before) = before {
                     temp.push(before);
                 }
 
-                if inter.1 > inter.0 {
+                if let Some(inter) = inter {
                     output.push(
-                        (inter.0 - mapper.source.start + mapper.destination)
-                            ..(inter.1 - mapper.source.start + mapper.destination),
+                        (inter.start - mapper.source.start + mapper.destination)
+                            ..(inter.end - mapper.source.start + mapper.destination),
                     );
                 }
 
-                if after.end > after.start {
-                    temp.push(after)
+                if let Some(after) = after {
+                    temp.push(after);
                 }
             }
             std::mem::swap(input, temp);
