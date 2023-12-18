@@ -6,7 +6,7 @@ use nom::{
     IResult,
 };
 
-use crate::common::nom::{nom_lines, nom_usize, process_input};
+use crate::common::nom::{nom_i64, nom_lines, process_input};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Dir {
@@ -19,11 +19,11 @@ pub enum Dir {
 #[derive(Debug, PartialEq, Eq)]
 pub struct DigDir {
     dir: Dir,
-    amt: usize,
+    amt: i64,
 }
 
 impl DigDir {
-    fn new(dir: Dir, amt: usize) -> Self {
+    fn new(dir: Dir, amt: i64) -> Self {
         DigDir { dir, amt }
     }
 }
@@ -37,12 +37,12 @@ fn parse_line(s: &str) -> IResult<&str, (DigDir, DigDir)> {
         _ => unreachable!(),
     })(s)?;
     let (s, _) = space1(s)?;
-    let (s, n) = nom_usize(s)?;
+    let (s, n) = nom_i64(s)?;
     let (s, _) = space1(s)?;
     let (s, _) = tag("(#")(s)?;
     let (s, (len, dir)) = map_res(hex_digit1, |x: &str| {
         assert_eq!(x.len(), 6);
-        let len = usize::from_str_radix(&x[..5], 16)?;
+        let len = i64::from_str_radix(&x[..5], 16)?;
         let dir = match &x[5..] {
             "3" => Dir::Up,
             "2" => Dir::Left,
@@ -62,7 +62,7 @@ pub fn generator(input: &str) -> Vec<(DigDir, DigDir)> {
     process_input(nom_lines(parse_line))(input)
 }
 
-fn solve<'a>(itr: impl IntoIterator<Item = &'a DigDir>) -> usize {
+fn solve<'a>(itr: impl IntoIterator<Item = &'a DigDir>) -> i64 {
     let mut width = 0;
     let mut area = 1;
 
@@ -90,12 +90,12 @@ fn solve<'a>(itr: impl IntoIterator<Item = &'a DigDir>) -> usize {
 }
 
 #[aoc(day18, part1)]
-pub fn part1(inputs: &[(DigDir, DigDir)]) -> usize {
+pub fn part1(inputs: &[(DigDir, DigDir)]) -> i64 {
     solve(inputs.iter().map(|(p1, _)| p1))
 }
 
 #[aoc(day18, part2)]
-pub fn part2(inputs: &[(DigDir, DigDir)]) -> usize {
+pub fn part2(inputs: &[(DigDir, DigDir)]) -> i64 {
     solve(inputs.iter().map(|(_, p2)| p2))
 }
 
@@ -139,7 +139,7 @@ U 2 (#7a21e3)";
         use super::*;
 
         const INPUT: &str = include_str!("../input/2023/day18.txt");
-        const ANSWERS: (usize, usize) = (48503, 148442153147147);
+        const ANSWERS: (i64, i64) = (48503, 148442153147147);
 
         #[test]
         pub fn test() {
