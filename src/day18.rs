@@ -64,24 +64,26 @@ pub fn generator(input: &str) -> Vec<(DigDir, DigDir)> {
 
 fn solve<'a>(itr: impl IntoIterator<Item = &'a DigDir>) -> i64 {
     let mut width = 0;
-    let mut area = 1;
+    let mut area = 1; // width of the digger
 
     for digdir in itr {
         let DigDir { dir: d, amt: l } = digdir;
 
         match d {
+            Dir::Right => {
+                width += l;
+                area += l;
+            }
+            Dir::Down => {
+                area += (width + 1) * l; // the +1 is for the width of the digger
+            }
             Dir::Up => {
                 area -= width * l;
             }
             Dir::Left => {
+                // we don't add to area, because going left won't be included
+                // until we go Down
                 width -= l;
-            }
-            Dir::Down => {
-                area += (width + 1) * l;
-            }
-            Dir::Right => {
-                width += l;
-                area += l;
             }
         }
     }
