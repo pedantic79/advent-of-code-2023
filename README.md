@@ -36,6 +36,8 @@
   - [solution](src/day17.rs)
 - [Day 18: Lavaduct Lagoon](https://adventofcode.com/2023/day/18)
   - [solution](src/day18.rs)
+- [Day 19: Aplenty](https://adventofcode.com/2023/day/19)
+  - [solution](src/day19.rs)
 <!-- Insert before -->
 
 See:
