@@ -1,15 +1,16 @@
 use std::ops::Range;
 
-use ahash::{HashMap, HashMapExt};
+use ahash::HashMapExt;
 use aoc_runner_derive::{aoc, aoc_generator};
+use arrayvec::ArrayVec;
 use nom::{
     branch::alt,
     bytes::complete::{tag, take_until1, take_while1},
     character::complete::{newline, one_of},
     combinator::{map, value},
-    multi::separated_list0,
     IResult,
 };
+use rustc_hash::FxHashMap as HashMap;
 
 use crate::common::nom::{fold_separated_list0, nom_lines, nom_usize, process_input};
 
@@ -107,7 +108,7 @@ fn parse_jump(s: &str) -> IResult<&str, Jump> {
 
 #[derive(Debug)]
 pub struct Workflow {
-    rules: Vec<(usize, char, usize, Jump)>,
+    rules: ArrayVec<(usize, char, usize, Jump), 4>,
     default: Jump,
 }
 
@@ -127,10 +128,17 @@ fn parse_rule(s: &str) -> IResult<&str, (usize, char, usize, Jump)> {
     Ok((s, (xmas, op, n, jump)))
 }
 
+fn parse_arrayvec_parse_rule(s: &str) -> IResult<&str, ArrayVec<(usize, char, usize, Jump), 4>> {
+    fold_separated_list0(tag(","), parse_rule, ArrayVec::new, |mut v, x| {
+        v.push(x);
+        v
+    })(s)
+}
+
 fn parse_workflow(s: &str) -> IResult<&str, (String, Workflow)> {
     let (s, name) = take_until1("{")(s)?;
     let (s, _) = tag("{")(s)?;
-    let (s, rules) = separated_list0(tag(","), parse_rule)(s)?;
+    let (s, rules) = parse_arrayvec_parse_rule(s)?;
     let (s, _) = tag(",")(s)?;
     let (s, default) = parse_jump(s)?;
     let (s, _) = tag("}")(s)?;
