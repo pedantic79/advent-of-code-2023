@@ -14,25 +14,14 @@ use nom::{
 use crate::common::nom::{fold_separated_list0, nom_lines, nom_usize, process_input};
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Part {
-    x: usize,
-    m: usize,
-    a: usize,
-    s: usize,
-}
+pub struct Part([usize; 4]);
 
 impl Part {
-    fn get(&self, name: char) -> usize {
-        match name {
-            'x' => self.x,
-            'm' => self.m,
-            'a' => self.a,
-            's' => self.s,
-            _ => panic!("not xmas"),
-        }
+    fn get(&self, name: usize) -> usize {
+        self.0[name]
     }
 
-    fn check(&self, key: char, cmp: char, n: usize) -> bool {
+    fn check(&self, key: usize, cmp: char, n: usize) -> bool {
         if cmp == '<' {
             self.get(key) < n
         } else {
@@ -41,7 +30,7 @@ impl Part {
     }
 
     fn rating(&self) -> usize {
-        self.x + self.m + self.a + self.s
+        self.0.iter().sum()
     }
 }
 
@@ -56,61 +45,39 @@ fn parse_part(i: &str) -> IResult<&str, Part> {
     let (i, s) = nom_usize(i)?;
     let (i, _) = tag("}")(i)?;
 
-    Ok((i, Part { x, m, a, s }))
+    Ok((i, Part([x, m, a, s])))
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
-pub struct Parts {
-    x: Range<usize>,
-    m: Range<usize>,
-    a: Range<usize>,
-    s: Range<usize>,
-}
+pub struct Parts([Range<usize>; 4]);
 
 impl Default for Parts {
     fn default() -> Self {
-        Self {
-            x: 1..4001,
-            m: 1..4001,
-            a: 1..4001,
-            s: 1..4001,
-        }
+        Self([1..4001, 1..4001, 1..4001, 1..4001])
     }
 }
 
 impl Parts {
     fn count(&self) -> usize {
-        self.x.len() * self.m.len() * self.a.len() * self.s.len()
+        self.0.iter().map(|a| a.len()).product()
     }
 
-    fn get(&self, key: char) -> &Range<usize> {
-        match key {
-            'x' => &self.x,
-            'm' => &self.m,
-            'a' => &self.a,
-            's' => &self.s,
-            _ => unreachable!(),
-        }
+    fn get(&self, key: usize) -> &Range<usize> {
+        &self.0[key]
     }
 
-    fn modify(&self, key: char, r: Range<usize>) -> Self {
+    fn modify(&self, key: usize, r: Range<usize>) -> Self {
         let mut res = self.clone();
-        match key {
-            'x' => res.x = r,
-            'm' => res.m = r,
-            'a' => res.a = r,
-            's' => res.s = r,
-            _ => unreachable!(),
-        };
-
+        res.0[key] = r;
         res
     }
 
-    fn check(&self, key: char, cmp: char, n: usize) -> [Option<Parts>; 2] {
+    fn check(&self, key: usize, cmp: char, n: usize) -> [Option<Parts>; 2] {
         let r = self.get(key);
         let (t, f) = if cmp == '<' {
             ((r.start..n), (n..r.end))
         } else {
+            // if x > n, then the first one that is included is n+1
             ((n + 1..r.end), (r.start..n + 1))
         };
 
@@ -140,12 +107,18 @@ fn parse_jump(s: &str) -> IResult<&str, Jump> {
 
 #[derive(Debug)]
 pub struct Workflow {
-    rules: Vec<(char, char, usize, Jump)>,
+    rules: Vec<(usize, char, usize, Jump)>,
     default: Jump,
 }
 
-fn parse_rule(s: &str) -> IResult<&str, (char, char, usize, Jump)> {
-    let (s, xmas) = one_of("xmas")(s)?;
+fn parse_rule(s: &str) -> IResult<&str, (usize, char, usize, Jump)> {
+    let (s, xmas) = map(one_of("xmas"), |k: char| match k {
+        'x' => 0,
+        'm' => 1,
+        'a' => 2,
+        's' => 3,
+        _ => unreachable!("unknown xmas"),
+    })(s)?;
     let (s, op) = one_of("<>")(s)?;
     let (s, n) = nom_usize(s)?;
     let (s, _) = tag(":")(s)?;
@@ -190,15 +163,12 @@ fn check_part(name: &Jump, p: &Part, wfs: &HashMap<String, Workflow>) -> bool {
         Jump::Reject => false,
         Jump::Rule(name) => {
             if let Some(wf) = wfs.get(name) {
-                let tgt = if let Some((_, _, _, tgt)) = wf
+                let tgt = wf
                     .rules
                     .iter()
                     .find(|(key, cmp, n, _)| p.check(*key, *cmp, *n))
-                {
-                    tgt
-                } else {
-                    &wf.default
-                };
+                    .map(|(_, _, _, tgt)| tgt)
+                    .unwrap_or(&wf.default);
 
                 check_part(tgt, p, wfs)
             } else {
