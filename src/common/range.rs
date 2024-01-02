@@ -3,10 +3,21 @@ use std::{
     ops::Range,
 };
 
-/// range_intersect takes range `range` and range `x`. This calculates the three possible
-/// overlaps of `range` with respects to `x`
+/// range_intersect takes range `range` and range `cutter`. This calculates the three possible
+/// overlaps of `range` with respects to `cutter`
 ///
-/// e.g.
+/// ```ignore
+/// range  [         )
+/// cutter     [   )
+///        [   )       <- before
+///            [   )   <- inter
+///                [ ) <- after
+/// ```
+///
+/// before starts with range.start, ends with min of cutter.start and range.end
+/// inter starts with max cutter.start and range.start, ends with min of range.end, cutter.end
+/// after starts with max cutter.end and range.start, ends with range.end
+///
 /// ```
 /// # use advent_of_code_2023::common::range_intersect;
 /// // x does not intersect, two possible ways, before or after
@@ -24,10 +35,10 @@ use std::{
 /// assert_eq!(range_intersect(10..15, &(13..20)), [Some(10..13), Some(13..15), None]);
 /// ```
 ///
-pub fn range_intersect<T: Ord + Copy>(range: Range<T>, x: &Range<T>) -> [Option<Range<T>>; 3] {
-    let before = range.start..min(range.end, x.start);
-    let inter = max(range.start, x.start)..min(x.end, range.end);
-    let after = max(x.end, range.start)..range.end;
+pub fn range_intersect<T: Ord + Copy>(range: Range<T>, cutter: &Range<T>) -> [Option<Range<T>>; 3] {
+    let before = range.start..min(range.end, cutter.start);
+    let inter = max(range.start, cutter.start)..min(cutter.end, range.end);
+    let after = max(cutter.end, range.start)..range.end;
 
     [
         (before.end > before.start).then_some(before),
