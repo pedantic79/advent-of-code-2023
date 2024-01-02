@@ -3,7 +3,7 @@ use std::ops::Range;
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 
-use crate::common::{range_overlap, utils::parse_split};
+use crate::common::{range_intersect, utils::parse_split};
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct IndividualMapper {
@@ -33,7 +33,7 @@ impl GroupMapper {
     ) {
         for mapper in &self.mappers {
             while let Some(range) = input.pop() {
-                let [before, inter, after] = range_overlap(range, mapper.source.clone());
+                let [before, inter, after] = range_intersect(range, &mapper.source);
 
                 if let Some(before) = before {
                     temp.push(before);
@@ -53,6 +53,7 @@ impl GroupMapper {
             std::mem::swap(input, temp);
         }
 
+        // ranges that don't map
         output.append(input);
     }
 }
