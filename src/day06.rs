@@ -47,6 +47,8 @@ pub fn generator_p2(input: &str) -> Vec<usize> {
     process_input(nom_lines(parse_number))(input)
 }
 
+// dist = (x - time) * x
+// 0 = x² - time*x - dist
 fn ways(time: usize, dist: usize) -> usize {
     let pyth = sqrt(time * time - 4 * dist);
     let r0 = (time - pyth) / 2;
