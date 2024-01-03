@@ -38,6 +38,8 @@
   - [solution](src/day18.rs)
 - [Day 19: Aplenty](https://adventofcode.com/2023/day/19)
   - [solution](src/day19.rs)
+- [Day 20: Pulse Propagation](https://adventofcode.com/2023/day/20)
+  - [solution](src/day20.rs)
 <!-- Insert before -->
 
 See:
