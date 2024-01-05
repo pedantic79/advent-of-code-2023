@@ -40,6 +40,8 @@
   - [solution](src/day19.rs)
 - [Day 20: Pulse Propagation](https://adventofcode.com/2023/day/20)
   - [solution](src/day20.rs)
+- [Day 21: Step Counter](https://adventofcode.com/2023/day/21)
+  - [solution](src/day21.rs)
 <!-- Insert before -->
 
 See:
