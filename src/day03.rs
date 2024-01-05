@@ -1,19 +1,26 @@
-use ahash::{HashMap, HashMapExt};
+use ahash::HashMap;
 use aoc_runner_derive::{aoc, aoc_generator};
+use arrayvec::ArrayVec;
 
 use crate::common::utils::neighbors_diag;
 
+#[derive(Debug, Default)]
+pub struct Map {
+    nums: HashMap<(usize, usize), ArrayVec<u32, 2>>,
+    none: Vec<u32>,
+}
+
 #[aoc_generator(day3)]
-pub fn generator(input: &str) -> HashMap<Option<(usize, usize)>, Vec<u32>> {
+pub fn generator(input: &str) -> Map {
     parse_numbers(input.lines().map(|line| line.bytes().collect()).collect())
 }
 
-fn parse_numbers(input: Vec<Vec<u8>>) -> HashMap<Option<(usize, usize)>, Vec<u32>> {
-    let mut gears = HashMap::new();
+fn parse_numbers(input: Vec<Vec<u8>>) -> Map {
+    let mut gears = Map::default();
 
     for (row, line) in input.iter().enumerate() {
-        let mut num = vec![];
-        let mut check = vec![];
+        let mut num = ArrayVec::new();
+        let mut check = ArrayVec::new();
 
         for (col, &b) in line.iter().enumerate() {
             if b.is_ascii_digit() {
@@ -33,16 +40,16 @@ fn parse_numbers(input: Vec<Vec<u8>>) -> HashMap<Option<(usize, usize)>, Vec<u32
 
 fn process(
     input: &[Vec<u8>],
-    num: &mut Vec<u8>,
-    check: &mut Vec<(usize, usize)>,
-    gears: &mut HashMap<Option<(usize, usize)>, Vec<u32>>,
+    num: &mut ArrayVec<u8, 3>,
+    check: &mut ArrayVec<(usize, usize), 3>,
+    gears: &mut Map,
 ) {
     let number: u32 = parse_int(num);
     let (surround, gear) = area_check(input, check);
     if let Some(co) = gear {
-        gears.entry(Some(co)).or_default().push(number);
+        gears.nums.entry(co).or_default().push(number);
     } else if surround {
-        gears.entry(None).or_default().push(number);
+        gears.none.push(number);
     }
 
     num.clear();
@@ -68,16 +75,17 @@ fn area_check(input: &[Vec<u8>], coords: &[(usize, usize)]) -> (bool, Option<(us
 }
 
 #[aoc(day3, part1)]
-pub fn part1(inputs: &HashMap<Option<(usize, usize)>, Vec<u32>>) -> u32 {
-    inputs.values().flatten().sum()
+pub fn part1(inputs: &Map) -> u32 {
+    inputs.nums.values().flatten().sum::<u32>() + inputs.none.iter().sum::<u32>()
 }
 
 #[aoc(day3, part2)]
-pub fn part2(inputs: &HashMap<Option<(usize, usize)>, Vec<u32>>) -> u32 {
+pub fn part2(inputs: &Map) -> u32 {
     inputs
-        .iter()
-        .filter(|x| x.0.is_some() && x.1.len() > 1)
-        .map(|x| x.1.iter().product::<u32>())
+        .nums
+        .values()
+        .filter(|x| x.len() > 1)
+        .map(|x| x.iter().product::<u32>())
         .sum()
 }
 
