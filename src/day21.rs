@@ -1,6 +1,7 @@
-use std::{fmt::Debug, iter::repeat};
+use std::fmt::Debug;
 
 use aoc_runner_derive::{aoc, aoc_generator};
+use bit_set::BitSet;
 
 #[derive(PartialEq, Eq)]
 pub enum State {
@@ -24,22 +25,22 @@ pub struct Grid {
     grid: Vec<State>,
     width: usize,
     height: usize,
-    start: (usize, usize),
+    start: usize,
 }
 
 impl Grid {
-    pub fn display(&self, locations: &[bool]) {
-        let mut idx = 0;
-        for (c, plots) in self.grid.iter().zip(locations.iter().chain(repeat(&false))) {
-            if *plots {
+    pub fn display(&self, locations: &BitSet) {
+        let mut target = self.width - 1;
+
+        for (idx, c) in self.grid.iter().enumerate() {
+            if locations.contains(idx) {
                 print!("O");
             } else {
                 print!("{:?}", c);
             }
-            idx += 1;
-            if idx == self.width {
+            if idx == target {
+                target += self.width;
                 println!();
-                idx = 0;
             }
         }
     }
@@ -53,17 +54,13 @@ impl Grid {
         ]
     }
 
-    fn step(&self, locations: &[bool]) -> Vec<bool> {
-        let mut res = vec![false; locations.len()];
+    fn step(&self, locations: &BitSet) -> BitSet {
+        let mut res = BitSet::with_capacity(self.grid.len());
 
-        for (index, &loc) in locations.iter().enumerate() {
-            if loc {
-                for neigh in self.neighbors(index) {
-                    if let Some(state) = self.grid.get(neigh) {
-                        if state == &State::Plot {
-                            res[neigh] = true;
-                        }
-                    }
+        for index in locations.iter() {
+            for neigh in self.neighbors(index) {
+                if let Some(State::Plot) = self.grid.get(neigh) {
+                    res.insert(neigh);
                 }
             }
         }
@@ -98,19 +95,19 @@ pub fn generator(input: &str) -> Grid {
         grid,
         height,
         width,
-        start,
+        start: start.0 * width + start.1,
     }
 }
 
 fn solve<const STEPS: usize>(inputs: &Grid) -> usize {
-    let mut taken = vec![false; inputs.grid.len()];
-    taken[inputs.start.0 * inputs.width + inputs.start.1] = true;
+    let mut taken = BitSet::with_capacity(inputs.grid.len());
+    taken.insert(inputs.start);
 
     for _ in 0..STEPS {
         taken = inputs.step(&taken);
     }
 
-    taken.iter().filter(|x| **x).count()
+    taken.len()
 }
 
 #[aoc(day21, part1)]
@@ -119,7 +116,7 @@ pub fn part1(inputs: &Grid) -> usize {
 }
 
 // #[aoc(day21, part2)]
-pub fn part2(inputs: &Grid) -> usize {
+pub fn part2(_inputs: &Grid) -> usize {
     unimplemented!()
 }
 
@@ -143,7 +140,9 @@ mod tests {
     pub fn input_test() {
         // println!("{:?}", generator(SAMPLE));
         let grid = generator(SAMPLE);
-        grid.display(&[]);
+        let mut set = BitSet::new();
+        set.insert(grid.start);
+        grid.display(&set);
 
         // assert_eq!(generator(SAMPLE), Object());
     }
