@@ -1,9 +1,10 @@
 use std::{fmt::Debug, isize};
 
-use ahash::{HashSet, HashSetExt};
+use ahash::HashSetExt;
 use aoc_runner_derive::{aoc, aoc_generator};
 use num::Integer;
 use polyfit_rs::polyfit_rs::polyfit;
+use rustc_hash::FxHashSet as HashSet;
 
 #[repr(u8)]
 #[derive(PartialEq, Eq, Clone)]
@@ -114,24 +115,42 @@ pub fn generator(input: &str) -> Grid {
 }
 
 fn solve(inputs: &Grid, steps: usize) -> usize {
-    let mut odd = HashSet::new();
+    solve_multiple(inputs, steps, &[steps])[0]
+}
+
+fn solve_multiple(inputs: &Grid, steps: usize, target_steps: &[usize]) -> Vec<usize> {
+    let mut even_output = HashSet::new();
     let mut even = HashSet::new();
 
     let mut frontier = vec![inputs.start];
     let mut temp = vec![];
 
-    for _ in 0..steps / 2 {
+    let mut pos = 0;
+    let mut output = Vec::with_capacity(target_steps.len());
+
+    for i in 0..steps / 2 {
         inputs.step(&mut frontier, &mut even, &mut temp);
+        if i * 2 + 1 == target_steps[pos] {
+            pos += 1;
+            output.push(even.len());
+        }
         // inputs.display(&even);
-        inputs.step(&mut frontier, &mut odd, &mut temp);
+
+        inputs.step(&mut frontier, &mut even_output, &mut temp);
+        if i * 2 + 2 == target_steps[pos] {
+            pos += 1;
+            output.push(even_output.len());
+        }
         // inputs.display(&odd);
     }
     if steps.is_odd() {
         inputs.step(&mut frontier, &mut even, &mut temp);
-        even.len()
-    } else {
-        odd.len()
+        if steps == target_steps[pos] {
+            output.push(even.len());
+        }
     }
+
+    output
 }
 
 #[aoc(day21, part1)]
@@ -145,11 +164,9 @@ pub fn part2(inputs: &Grid) -> usize {
     let rem = 26_501_365 % n;
 
     let xs = [0.0, 1.0, 2.0];
-    let mut ys = Vec::with_capacity(3);
-    for i in [rem, rem + n, rem + n * 2] {
-        let y = solve(inputs, i);
-        ys.push(y as f64);
-    }
+    let ixs = [rem, rem + n, rem + n * 2];
+    let iys = solve_multiple(inputs, ixs.last().copied().unwrap(), &ixs);
+    let ys: Vec<_> = iys.into_iter().map(|y| y as f64).collect();
 
     let coefficients = polyfit(&xs, &ys, 2).unwrap();
     let equation = |x: usize| {
