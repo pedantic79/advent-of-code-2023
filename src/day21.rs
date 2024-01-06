@@ -2,6 +2,7 @@ use std::{fmt::Debug, isize};
 
 use ahash::{HashSet, HashSetExt};
 use aoc_runner_derive::{aoc, aoc_generator};
+use polyfit_rs::polyfit_rs::polyfit;
 
 #[derive(PartialEq, Eq)]
 pub enum State {
@@ -142,13 +143,21 @@ pub fn part2(inputs: &Grid) -> usize {
     let n = inputs.grid.len();
     let rem = 26_501_365 % n;
 
-    let xs = [0, 1, 2];
+    let xs = [0.0, 1.0, 2.0];
     let mut ys = Vec::with_capacity(3);
     for i in [rem, rem + n, rem + n * 2] {
         let y = solve(inputs, i);
         ys.push(y as f64);
     }
-    0
+
+    let coefficients = polyfit(&xs, &ys, 2).unwrap();
+    let equation = |x: usize| {
+        coefficients[2].round() as usize * x * x
+            + coefficients[1].round() as usize * x
+            + coefficients[0].round() as usize
+    };
+
+    equation(26_501_365 / n)
 }
 
 #[cfg(test)]
