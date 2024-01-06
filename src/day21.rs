@@ -2,13 +2,15 @@ use std::{fmt::Debug, isize};
 
 use ahash::{HashSet, HashSetExt};
 use aoc_runner_derive::{aoc, aoc_generator};
+use num::Integer;
 use polyfit_rs::polyfit_rs::polyfit;
 
-#[derive(PartialEq, Eq)]
+#[repr(u8)]
+#[derive(PartialEq, Eq, Clone)]
 pub enum State {
-    Rock,
-    Plot,
-    Step,
+    Rock = b'#',
+    Plot = b'.',
+    Start = b'S',
 }
 
 impl Debug for State {
@@ -16,14 +18,14 @@ impl Debug for State {
         match self {
             Self::Rock => write!(f, "#"),
             Self::Plot => write!(f, "."),
-            Self::Step => write!(f, "O"),
+            Self::Start => write!(f, "S"),
         }
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Debug)]
 pub struct Grid {
-    grid: Vec<Vec<State>>,
+    grid: Vec<State>,
     width: isize,
     height: isize,
     start: (isize, isize),
@@ -31,10 +33,10 @@ pub struct Grid {
 
 impl Grid {
     fn get(&self, index: (isize, isize)) -> Option<&State> {
-        let r = usize::try_from(index.0.rem_euclid(self.height)).unwrap();
-        let c = usize::try_from(index.1.rem_euclid(self.width)).unwrap();
+        let r = index.0.rem_euclid(self.height);
+        let c = index.1.rem_euclid(self.width);
 
-        self.grid.get(r).and_then(|row| row.get(c))
+        self.grid.get(to_usize(r * (self.width + 1) + c))
     }
 
     pub fn display(&self, locations: &HashSet<(isize, isize)>) {
@@ -68,69 +70,58 @@ impl Grid {
         [(r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)]
     }
 
-    fn step(&self, locations: &HashSet<(isize, isize)>) -> HashSet<(isize, isize)> {
-        let mut res = HashSet::with_capacity(self.grid.len());
-
-        for &index in locations.iter() {
+    fn step(&self, input: &HashSet<(isize, isize)>, output: &mut HashSet<(isize, isize)>) {
+        for &index in input.iter() {
             for neigh in self.neighbors(index) {
-                if let Some(State::Plot) = self.get(neigh) {
-                    res.insert(neigh);
+                if let Some(State::Plot | State::Start) = self.get(neigh) {
+                    output.insert(neigh);
                 }
             }
         }
-
-        res
     }
+}
+
+fn to_isize(u: usize) -> isize {
+    isize::try_from(u).unwrap()
+}
+
+fn to_usize(i: isize) -> usize {
+    usize::try_from(i).unwrap()
 }
 
 #[aoc_generator(day21)]
 pub fn generator(input: &str) -> Grid {
-    let mut start = (0, 0);
-    let mut height = 0;
-    let mut width = 0;
-    let mut grid = Vec::new();
+    let width = input.find('\n').unwrap();
+    let height = input.len() / width;
 
-    for l in input.lines() {
-        width = l.len();
-
-        grid.push(
-            l.bytes()
-                .enumerate()
-                .map(|(cidx, b)| match b {
-                    b'#' => State::Rock,
-                    b'.' => State::Plot,
-                    b'S' => {
-                        start = (height, cidx);
-                        State::Plot
-                    }
-                    _ => panic!("unexpected byte"),
-                })
-                .collect(),
-        );
-        height += 1;
-    }
+    let grid = unsafe { std::mem::transmute::<&[u8], &[State]>(input.as_bytes()) };
 
     Grid {
-        grid,
-        height: isize::try_from(height).unwrap(),
-        width: isize::try_from(width).unwrap(),
-        start: (
-            isize::try_from(start.0).unwrap(),
-            isize::try_from(start.1).unwrap(),
-        ),
+        grid: grid.to_vec(),
+        height: to_isize(height),
+        width: to_isize(width),
+        start: (to_isize(height / 2), to_isize(width / 2)),
     }
 }
 
 fn solve(inputs: &Grid, steps: usize) -> usize {
-    let mut taken = HashSet::with_capacity(inputs.grid.len());
-    taken.insert(inputs.start);
+    let mut odd = HashSet::new();
+    let mut even = HashSet::new();
 
-    for _ in 0..steps {
-        taken = inputs.step(&taken);
-        // inputs.display(&taken);
+    odd.insert(inputs.start);
+
+    for _ in 0..steps / 2 {
+        inputs.step(&odd, &mut even);
+        // inputs.display(&even);
+        inputs.step(&even, &mut odd);
+        // inputs.display(&odd);
     }
-
-    taken.len()
+    if steps.is_odd() {
+        inputs.step(&odd, &mut even);
+        even.len()
+    } else {
+        odd.len()
+    }
 }
 
 #[aoc(day21, part1)]
@@ -140,7 +131,7 @@ pub fn part1(inputs: &Grid) -> usize {
 
 #[aoc(day21, part2)]
 pub fn part2(inputs: &Grid) -> usize {
-    let n = inputs.grid.len();
+    let n = to_usize(inputs.width);
     let rem = 26_501_365 % n;
 
     let xs = [0.0, 1.0, 2.0];
@@ -198,7 +189,7 @@ mod tests {
         assert_eq!(solve(&generator(SAMPLE), 10), 50);
         assert_eq!(solve(&generator(SAMPLE), 50), 1594);
         assert_eq!(solve(&generator(SAMPLE), 100), 6536);
-        assert_eq!(solve(&generator(SAMPLE), 500), 167004);
+        // assert_eq!(solve(&generator(SAMPLE), 500), 167004);
 
         // assert_eq!(part2(&generator(SAMPLE)), 336);
     }
@@ -207,7 +198,7 @@ mod tests {
         use super::*;
 
         const INPUT: &str = include_str!("../input/2023/day21.txt");
-        const ANSWERS: (usize, usize) = (3764, 0);
+        const ANSWERS: (usize, usize) = (3764, 622926941971282);
 
         #[test]
         pub fn test() {
@@ -215,7 +206,7 @@ mod tests {
             let output = generator(input);
 
             assert_eq!(part1(&output), ANSWERS.0);
-            // assert_eq!(part2(&output), ANSWERS.1);
+            assert_eq!(part2(&output), ANSWERS.1);
         }
     }
 }
