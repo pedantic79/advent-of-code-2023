@@ -1,8 +1,6 @@
 use std::cmp::{Ordering, Reverse};
 
 use aoc_runner_derive::{aoc, aoc_generator};
-use arrayvec::ArrayVec;
-use itertools::Itertools;
 use nom::{
     character::complete::{one_of, space1},
     combinator::map,
@@ -10,7 +8,10 @@ use nom::{
     IResult,
 };
 
-use crate::common::nom::{nom_lines, nom_usize, process_input};
+use crate::common::{
+    heap_retain,
+    nom::{nom_lines, nom_usize, process_input},
+};
 
 type HandValue = Reverse<u8>;
 
@@ -34,38 +35,37 @@ pub struct Hand {
 }
 
 impl Hand {
-    fn classify<const JOKER_VALUE: u8>(cards: &[HandValue; 5]) -> HandTypes {
-        let jokers = cards.iter().filter(|x| x.0 == JOKER_VALUE).count();
-        let mut cards: ArrayVec<HandValue, 5> = cards
-            .iter()
-            .filter(|x| x.0 != JOKER_VALUE)
-            .copied()
-            .collect();
-
-        cards.sort_unstable_by_key(|&x| x);
-        let mut data_grouped: ArrayVec<ArrayVec<HandValue, 5>, 5> = ArrayVec::new();
-
-        for (_, group) in &cards.into_iter().group_by(|elt| *elt) {
-            data_grouped.push(group.collect());
-        }
-
-        data_grouped.sort_unstable_by_key(|x| Reverse(x.len()));
-        let cards = data_grouped;
-
-        if cards.is_empty() {
-            // all hands are jokers
-            return HandTypes::Five;
-        }
-        match cards[0].len() + jokers {
+    fn classify(cards: &[HandValue; 5]) -> (HandTypes, HandTypes) {
+        let helper = |count, sec| match count {
             5 => HandTypes::Five,
             4 => HandTypes::Four,
-            3 if cards[1].len() == 2 => HandTypes::Full,
+            3 if sec == 2 => HandTypes::Full,
             3 => HandTypes::Three,
-            2 if cards[1].len() == 2 => HandTypes::TwoPair,
+            2 if sec == 2 => HandTypes::TwoPair,
             2 => HandTypes::OnePair,
             1 => HandTypes::High,
-            _ => panic!("unknown hand type: {:?}", cards),
+            _ => panic!("unknown hand type {:?}", cards),
+        };
+
+        let mut counts = [0usize; 15];
+        for &Reverse(c) in cards {
+            if c == 11 {
+                counts[1] += 1;
+            } else {
+                counts[usize::from(c)] += 1;
+            }
         }
+
+        let jokers = counts[1];
+        let [max, sec] = counts[2..]
+            .iter()
+            .fold([0, 0], |acc, &n| heap_retain::accumulate_max_n(acc, n));
+
+        let part2 = helper(max + jokers, sec);
+        let [max, sec] = heap_retain::accumulate_max_n([max, sec], jokers);
+        let part1 = helper(max, sec);
+
+        (part1, part2)
     }
 
     fn cards_compare<const JOKER: bool>(s: &[HandValue], other: &[HandValue]) -> Ordering {
@@ -119,8 +119,7 @@ fn parse_line(s: &str) -> IResult<&str, Hand> {
     let (s, _) = space1(s)?;
     let (s, value) = nom_usize(s)?;
 
-    let part1 = Hand::classify::<0>(&cards);
-    let part2 = Hand::classify::<11>(&cards);
+    let (part1, part2) = Hand::classify(&cards);
 
     Ok((
         s,
