@@ -70,14 +70,23 @@ impl Grid {
         [(r + 1, c), (r - 1, c), (r, c + 1), (r, c - 1)]
     }
 
-    fn step(&self, input: &HashSet<(isize, isize)>, output: &mut HashSet<(isize, isize)>) {
+    fn step(
+        &self,
+        input: &mut Vec<(isize, isize)>,
+        output: &mut HashSet<(isize, isize)>,
+        temp: &mut Vec<(isize, isize)>,
+    ) {
         for &index in input.iter() {
             for neigh in self.neighbors(index) {
                 if let Some(State::Plot | State::Start) = self.get(neigh) {
-                    output.insert(neigh);
+                    if output.insert(neigh) {
+                        temp.push(neigh);
+                    }
                 }
             }
         }
+        input.clear();
+        std::mem::swap(input, temp);
     }
 }
 
@@ -108,16 +117,17 @@ fn solve(inputs: &Grid, steps: usize) -> usize {
     let mut odd = HashSet::new();
     let mut even = HashSet::new();
 
-    odd.insert(inputs.start);
+    let mut frontier = vec![inputs.start];
+    let mut temp = vec![];
 
     for _ in 0..steps / 2 {
-        inputs.step(&odd, &mut even);
+        inputs.step(&mut frontier, &mut even, &mut temp);
         // inputs.display(&even);
-        inputs.step(&even, &mut odd);
+        inputs.step(&mut frontier, &mut odd, &mut temp);
         // inputs.display(&odd);
     }
     if steps.is_odd() {
-        inputs.step(&odd, &mut even);
+        inputs.step(&mut frontier, &mut even, &mut temp);
         even.len()
     } else {
         odd.len()
