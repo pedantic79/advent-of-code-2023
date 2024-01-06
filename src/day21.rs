@@ -87,7 +87,6 @@ impl Grid {
             }
         }
         input.clear();
-        std::mem::swap(input, temp);
     }
 }
 
@@ -103,6 +102,8 @@ fn to_usize(i: isize) -> usize {
 pub fn generator(input: &str) -> Grid {
     let width = input.find('\n').unwrap();
     let height = input.len() / width;
+    let start = input.find('S').unwrap();
+    let start = (start / (width + 1), start % (width + 1));
 
     let grid = unsafe { std::mem::transmute::<&[u8], &[State]>(input.as_bytes()) };
 
@@ -110,7 +111,7 @@ pub fn generator(input: &str) -> Grid {
         grid: grid.to_vec(),
         height: to_isize(height),
         width: to_isize(width),
-        start: (to_isize(height / 2), to_isize(width / 2)),
+        start: (to_isize(start.0), to_isize(start.1)),
     }
 }
 
@@ -120,23 +121,23 @@ fn solve(inputs: &Grid, steps: usize) -> usize {
 
 fn solve_multiple(inputs: &Grid, steps: usize, target_steps: &[usize]) -> Vec<usize> {
     let mut even_output = HashSet::new();
-    let mut even = HashSet::new();
+    let mut odd_output = HashSet::new();
 
-    let mut frontier = vec![inputs.start];
-    let mut temp = vec![];
+    let mut frontier_odd = vec![inputs.start];
+    let mut frontier_even = vec![];
 
     let mut pos = 0;
     let mut output = Vec::with_capacity(target_steps.len());
 
     for i in 0..steps / 2 {
-        inputs.step(&mut frontier, &mut even, &mut temp);
+        inputs.step(&mut frontier_odd, &mut odd_output, &mut frontier_even);
         if i * 2 + 1 == target_steps[pos] {
             pos += 1;
-            output.push(even.len());
+            output.push(odd_output.len());
         }
         // inputs.display(&even);
 
-        inputs.step(&mut frontier, &mut even_output, &mut temp);
+        inputs.step(&mut frontier_even, &mut even_output, &mut frontier_odd);
         if i * 2 + 2 == target_steps[pos] {
             pos += 1;
             output.push(even_output.len());
@@ -144,9 +145,9 @@ fn solve_multiple(inputs: &Grid, steps: usize, target_steps: &[usize]) -> Vec<us
         // inputs.display(&odd);
     }
     if steps.is_odd() {
-        inputs.step(&mut frontier, &mut even, &mut temp);
+        inputs.step(&mut frontier_odd, &mut odd_output, &mut frontier_even);
         if steps == target_steps[pos] {
-            output.push(even.len());
+            output.push(odd_output.len());
         }
     }
 
@@ -165,7 +166,7 @@ pub fn part2(inputs: &Grid) -> usize {
 
     let xs = [0.0, 1.0, 2.0];
     let ixs = [rem, rem + n, rem + n * 2];
-    let iys = solve_multiple(inputs, ixs.last().copied().unwrap(), &ixs);
+    let iys = solve_multiple(inputs, ixs[ixs.len() - 1], &ixs);
     let ys: Vec<_> = iys.into_iter().map(|y| y as f64).collect();
 
     let coefficients = polyfit(&xs, &ys, 2).unwrap();
