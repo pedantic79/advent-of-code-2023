@@ -1,39 +1,41 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use rayon::iter::{ParallelBridge, ParallelIterator};
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum Object {
-    Empty,
-    Slash,
-    BackSlash,
-    Pipe,
-    Dash,
+#[repr(u8)]
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub enum Space {
+    Empty = b'.',
+    Slash = b'/',
+    BackSlash = b'\\',
+    Pipe = b'|',
+    Dash = b'-',
+    NewLine = b'\n',
 }
 
-impl Object {
+impl Space {
     fn next_dir(&self, d: &Dir) -> Dir {
         match (self, d) {
-            (Object::BackSlash, Dir::North) => Dir::West,
-            (Object::BackSlash, Dir::West) => Dir::North,
-            (Object::BackSlash, Dir::South) => Dir::East,
-            (Object::BackSlash, Dir::East) => Dir::South,
-            (Object::Slash, Dir::North) => Dir::East,
-            (Object::Slash, Dir::West) => Dir::South,
-            (Object::Slash, Dir::South) => Dir::West,
-            (Object::Slash, Dir::East) => Dir::North,
+            (Space::BackSlash, Dir::North) => Dir::West,
+            (Space::BackSlash, Dir::West) => Dir::North,
+            (Space::BackSlash, Dir::South) => Dir::East,
+            (Space::BackSlash, Dir::East) => Dir::South,
+            (Space::Slash, Dir::North) => Dir::East,
+            (Space::Slash, Dir::West) => Dir::South,
+            (Space::Slash, Dir::South) => Dir::West,
+            (Space::Slash, Dir::East) => Dir::North,
             _ => unreachable!("don't pass a non-mirror"),
         }
     }
 
     fn next_split(&self, d: Dir, pos: (usize, usize)) -> [Option<((usize, usize), Dir)>; 2] {
         match (self, d) {
-            (Object::Pipe, Dir::North | Dir::South) => [Some((d.next_pos(pos), d)), None],
-            (Object::Dash, Dir::West | Dir::East) => [Some((d.next_pos(pos), d)), None],
-            (Object::Pipe, Dir::West | Dir::East) => [
+            (Space::Pipe, Dir::North | Dir::South) => [Some((d.next_pos(pos), d)), None],
+            (Space::Dash, Dir::West | Dir::East) => [Some((d.next_pos(pos), d)), None],
+            (Space::Pipe, Dir::West | Dir::East) => [
                 Some((Dir::North.next_pos(pos), Dir::North)),
                 Some((Dir::South.next_pos(pos), Dir::South)),
             ],
-            (Object::Dash, Dir::North | Dir::South) => [
+            (Space::Dash, Dir::North | Dir::South) => [
                 Some((Dir::West.next_pos(pos), Dir::West)),
                 Some((Dir::East.next_pos(pos), Dir::East)),
             ],
@@ -71,25 +73,14 @@ impl Dir {
 }
 
 #[aoc_generator(day16)]
-pub fn generator(input: &str) -> Vec<Vec<Object>> {
+pub fn generator(input: &str) -> Vec<Vec<Space>> {
     input
         .lines()
-        .map(|line| {
-            line.bytes()
-                .map(|cell| match cell {
-                    b'.' => Object::Empty,
-                    b'/' => Object::Slash,
-                    b'\\' => Object::BackSlash,
-                    b'|' => Object::Pipe,
-                    b'-' => Object::Dash,
-                    _ => panic!("unexpected character"),
-                })
-                .collect()
-        })
+        .map(|line| unsafe { std::mem::transmute::<&[u8], &[Space]>(line.as_bytes()) }.to_vec())
         .collect()
 }
 
-fn solve(inputs: &[Vec<Object>], start: ((usize, usize), Dir)) -> usize {
+fn solve(inputs: &[Vec<Space>], start: ((usize, usize), Dir)) -> usize {
     let mut queue = Vec::new();
     let mut seen = vec![vec![0; inputs[0].len()]; inputs.len()];
 
@@ -103,15 +94,18 @@ fn solve(inputs: &[Vec<Object>], start: ((usize, usize), Dir)) -> usize {
 
             seen[pos.0][pos.1] |= dir.get_mask();
             match kind {
-                Object::Empty => queue.push((dir.next_pos(pos), dir)),
-                Object::Slash | Object::BackSlash => {
+                Space::Empty => queue.push((dir.next_pos(pos), dir)),
+                Space::Slash | Space::BackSlash => {
                     let new_dir = kind.next_dir(&dir);
                     queue.push((new_dir.next_pos(pos), new_dir));
                 }
-                Object::Pipe | Object::Dash => {
+                Space::Pipe | Space::Dash => {
                     for next in kind.next_split(dir, pos).into_iter().flatten() {
                         queue.push(next);
                     }
+                }
+                Space::NewLine => {
+                    unreachable!("shouldn't be processing newline")
                 }
             }
         }
@@ -123,12 +117,12 @@ fn solve(inputs: &[Vec<Object>], start: ((usize, usize), Dir)) -> usize {
 }
 
 #[aoc(day16, part1)]
-pub fn part1(inputs: &[Vec<Object>]) -> usize {
+pub fn part1(inputs: &[Vec<Space>]) -> usize {
     solve(inputs, ((0, 0), Dir::East))
 }
 
 #[aoc(day16, part2)]
-pub fn part2(inputs: &Vec<Vec<Object>>) -> usize {
+pub fn part2(inputs: &[Vec<Space>]) -> usize {
     let height = inputs.len();
     let width = inputs[0].len();
 
