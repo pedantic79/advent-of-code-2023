@@ -6,7 +6,10 @@ use nom::{
     IResult,
 };
 
-use crate::common::nom::{nom_i64, nom_lines, process_input};
+use crate::common::{
+    nom::{nom_i64, nom_lines, process_input},
+    utils::calculate_area_perimeter,
+};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Dir {
@@ -62,6 +65,22 @@ pub fn generator(input: &str) -> Vec<(DigDir, DigDir)> {
     process_input(nom_lines(parse_line))(input)
 }
 
+fn calculate_area<'a>(points: impl Iterator<Item = &'a DigDir>) -> i64 {
+    let coords = points.scan((0, 0), |i1, DigDir { dir, amt }| {
+        match dir {
+            Dir::Up => i1.0 -= amt,
+            Dir::Left => i1.1 -= amt,
+            Dir::Down => i1.0 += amt,
+            Dir::Right => i1.1 += amt,
+        };
+
+        Some(*i1)
+    });
+
+    let (area, perimeter) = calculate_area_perimeter(coords);
+    (area.abs() + perimeter) / 2 + 1
+}
+
 fn solve<'a>(itr: impl IntoIterator<Item = &'a DigDir>) -> i64 {
     let mut width = 0;
     let mut area = 1; // width of the digger
@@ -96,9 +115,19 @@ pub fn part1(inputs: &[(DigDir, DigDir)]) -> i64 {
     solve(inputs.iter().map(|(p1, _)| p1))
 }
 
+#[aoc(day18, part1, shoelace)]
+pub fn part1_shoelace(inputs: &[(DigDir, DigDir)]) -> i64 {
+    calculate_area(inputs.iter().map(|(p1, _)| p1))
+}
+
 #[aoc(day18, part2)]
 pub fn part2(inputs: &[(DigDir, DigDir)]) -> i64 {
     solve(inputs.iter().map(|(_, p2)| p2))
+}
+
+#[aoc(day18, part2, shoelace)]
+pub fn part2_shoelace(inputs: &[(DigDir, DigDir)]) -> i64 {
+    calculate_area(inputs.iter().map(|(_, p2)| p2))
 }
 
 #[cfg(test)]
