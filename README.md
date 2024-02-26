@@ -44,6 +44,8 @@
   - [solution](src/day21.rs)
 - [Day 22: Sand Slabs](https://adventofcode.com/2023/day/22)
   - [solution](src/day22.rs)
+- [Day 23: A Long Walk](https://adventofcode.com/2023/day/23)
+  - [solution](src/day23.rs)
 <!-- Insert before -->
 
 See:
