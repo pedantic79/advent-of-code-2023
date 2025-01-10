@@ -11,9 +11,6 @@ use pathfinding::{
 use petgraph::{algo::all_simple_paths, Graph};
 use rustc_hash::FxHashMap as HashMap;
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct Object {}
-
 #[aoc_generator(day23)]
 pub fn generator(input: &str) -> Matrix<u8> {
     input.lines().map(|l| l.bytes()).collect()
@@ -73,7 +70,7 @@ where
                     *neighbors != n
                         && h.contains_key(neighbors)
                         && !seen[grid.idx(*neighbors)]
-                        && !g.contains_edge(h[&neighbors], h[&n])
+                        && !g.contains_edge(h[neighbors], h[&n])
                 },
             );
             if let Some(path) = path {
