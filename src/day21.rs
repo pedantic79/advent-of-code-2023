@@ -1,4 +1,4 @@
-use std::{fmt::Debug, isize};
+use std::fmt::Debug;
 
 use ahash::HashSetExt;
 use aoc_runner_derive::{aoc, aoc_generator};
