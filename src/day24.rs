@@ -1,6 +1,6 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
-use nalgebra::{Matrix6, Matrix6x1, RowVector6};
+use nalgebra::{Matrix6, RowVector6, Vector6};
 use nom::{
     bytes::complete::tag,
     character::complete::space1,
@@ -124,7 +124,46 @@ pub fn part1(hailstones: &[Hailstone]) -> usize {
 }
 
 #[aoc(day24, part2)]
-pub fn part2(hailstones: &[Hailstone]) -> usize {
+pub fn part2(hailstones: &[Hailstone]) -> u64 {
+    // For part2, we are trying to find a rock PX, PY, PZ and VX, VY, VZ
+    // This rock needs to hit another rock p0x, p0y, p0z, v0x, v0y, v0z
+    //
+    // For the x-coordinate, P and p0 intersect at time t
+    // PX + t * VX = p0x + t * v0x
+    // t = (PX - p0x)/(v0x - VX)
+    //
+    // Repeat for the y-coordinate:
+    // t = (PY - p0y)/(v0y - VY)
+    //
+    // Now set each to be equal:
+    // (PX - p0x)/(v0x - VX) = (PY - p0y)/(v0y - VY)
+    //
+    // Cross multiply to remove the division, and then multiply the bionomials
+    // (PX - p0x)*(v0y - VY) = (PY - p0y)*(v0x - VX)
+    // PX*v0y - PX*VY - p0x*v0y + p0x*VY = PY*v0x - PY*VX - p0y*v0x + p0y*VX
+    //
+    // We group only the terms dealing with p0 on the right
+    // PY*VX - PX*VY = p0x*v0y - p0y*v0x + PY*v0x + p0y*VX - p0x*VY - PX*v0y
+    //
+    // Now repeat with another rock p1x, p1y, p1z, v1x, v1y, v1z
+    // PY*VX - PX*VY = p1x*v1y - p1y*v1x + PY*v1x + p1y*VX - p1x*VY - PX*v1y
+    //
+    // As the left side of both are equal, we can set these two equations equal to each other
+    // p0x*v0y - p0y*v0x + PY*v0x + p0y*VX - p0x*VY - PX*v0y = p1x*v1y - p1y*v1x + PY*v1x + p1y*VX - p1x*VY - PX*v1y
+    //
+    // Gather like terms with the unknown rock on the left, and the only known terms on the right
+    // PX*(v1y - v0y) + PY*(v0x - v1x) + VX*(p0y - p1y) + VY*(v0x - v1x) = p0y*v0x - p0x*v0y + p1x*v1y - p1y*v1x
+    //
+    // This yeilds us one line in the 6x6 matrix A and one entry of B vector
+    // [v1y - v0y, v0x - v1x, 0, p0y - p1y, v0x - v1x, 0] = [p0y*v0x - p0x*v0y + p1x*v1y - p1y*v1x]
+    //
+    // Repeat with xz and yz for rock p0 and rock p1
+    // This will yield us an additional two lines to the matrix and vector
+    //
+    // Repeat the entire process with p0 and another rock p2
+    // this yields us 6 equations for the 6 unknowns PX, PY, PZ, VX, VY, VYZ
+
+    // Only use the first 3 hailstones
     let p0 = &hailstones[0].pos;
     let p1 = &hailstones[1].pos;
     let p2 = &hailstones[2].pos;
@@ -132,21 +171,13 @@ pub fn part2(hailstones: &[Hailstone]) -> usize {
     let v1 = &hailstones[1].vel;
     let v2 = &hailstones[2].vel;
 
-    let b = Matrix6x1::from_row_slice(&[
-        ((p0.y * v0.x - p1.y * v1.x) - (p0.x * v0.y - p1.x * v1.y)) as f64,
-        ((p0.y * v0.x - p2.y * v2.x) - (p0.x * v0.y - p2.x * v2.y)) as f64,
-        ((p0.z * v0.x - p1.z * v1.x) - (p0.x * v0.z - p1.x * v1.z)) as f64,
-        ((p0.z * v0.x - p2.z * v2.x) - (p0.x * v0.z - p2.x * v2.z)) as f64,
-        ((p0.z * v0.y - p1.z * v1.y) - (p0.y * v0.z - p1.y * v1.z)) as f64,
-        ((p0.z * v0.y - p2.z * v2.y) - (p0.y * v0.z - p2.y * v2.z)) as f64,
-    ]);
-
     let mk_rv6 = |v0: i64, v1: i64, v2: i64, p0: i64, p1: i64, p2: i64| {
         RowVector6::new(
             v0 as f64, v1 as f64, v2 as f64, p0 as f64, p1 as f64, p2 as f64,
         )
     };
 
+    // coefficient matrix
     let a = Matrix6::from_rows(&[
         mk_rv6(v1.y - v0.y, v0.x - v1.x, 0, p0.y - p1.y, p1.x - p0.x, 0),
         mk_rv6(v2.y - v0.y, v0.x - v2.x, 0, p0.y - p2.y, p2.x - p0.x, 0),
@@ -156,9 +187,20 @@ pub fn part2(hailstones: &[Hailstone]) -> usize {
         mk_rv6(0, v2.z - v0.z, v0.y - v2.y, 0, p0.z - p2.z, p2.y - p0.y),
     ]);
 
-    let r = a.lu().solve(&b).unwrap();
+    // constraits vector
+    let b = Vector6::from_row_slice(&[
+        ((p0.y * v0.x - p1.y * v1.x) - (p0.x * v0.y - p1.x * v1.y)) as f64,
+        ((p0.y * v0.x - p2.y * v2.x) - (p0.x * v0.y - p2.x * v2.y)) as f64,
+        ((p0.z * v0.x - p1.z * v1.x) - (p0.x * v0.z - p1.x * v1.z)) as f64,
+        ((p0.z * v0.x - p2.z * v2.x) - (p0.x * v0.z - p2.x * v2.z)) as f64,
+        ((p0.z * v0.y - p1.z * v1.y) - (p0.y * v0.z - p1.y * v1.z)) as f64,
+        ((p0.z * v0.y - p2.z * v2.y) - (p0.y * v0.z - p2.y * v2.z)) as f64,
+    ]);
 
-    (r[0] + r[1] + r[2]).round() as usize
+    let r = a.lu().solve(&b).unwrap();
+    assert_eq!(r.len(), 6);
+
+    r.iter().take(3).sum::<f64>().round() as u64
 }
 
 #[cfg(test)]
@@ -192,7 +234,7 @@ mod tests {
         use super::*;
 
         const INPUT: &str = include_str!("../input/2023/day24.txt");
-        const ANSWERS: (usize, usize) = (21679, 566914635762564);
+        const ANSWERS: (usize, u64) = (21679, 566914635762564);
 
         #[test]
         pub fn test() {
