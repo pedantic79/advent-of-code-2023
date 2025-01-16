@@ -26,6 +26,7 @@ smallstr = "0.3.0"
 polyfit-rs = "0.2.1"
 petgraph = "0.7.1"
 nalgebra = "0.33.2"
+rustworkx-core = "0.15.1"
 
 [profile.release]
 lto = "thin"

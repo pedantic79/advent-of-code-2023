@@ -46,8 +46,10 @@
   - [solution](src/day22.rs)
 - [Day 23: A Long Walk](https://adventofcode.com/2023/day/23)
   - [solution](src/day23.rs)
-- [Day 24:](https://adventofcode.com/2023/day/24)
+- [Day 24: Never Tell Me The Odds](https://adventofcode.com/2023/day/24)
   - [solution](src/day24.rs)
+- [Day 25: Snowverload](https://adventofcode.com/2023/day/25)
+  - [solution](src/day25.rs)
 <!-- Insert before -->
 
 See:
