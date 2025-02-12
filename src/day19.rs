@@ -8,7 +8,7 @@ use nom::{
     bytes::complete::{tag, take_until1, take_while1},
     character::complete::{newline, one_of},
     combinator::{map, value},
-    IResult,
+    IResult, Parser,
 };
 use rustc_hash::FxHashMap as HashMap;
 
@@ -103,7 +103,8 @@ fn parse_jump(s: &str) -> IResult<&str, Jump> {
         map(take_while1(|c: char| c.is_ascii_alphabetic()), |s: &str| {
             Jump::Rule(s.into())
         }),
-    ))(s)
+    ))
+    .parse(s)
 }
 
 #[derive(Debug)]
@@ -119,7 +120,8 @@ fn parse_rule(s: &str) -> IResult<&str, (usize, char, usize, Jump)> {
         'a' => 2,
         's' => 3,
         _ => unreachable!("unknown xmas"),
-    })(s)?;
+    })
+    .parse(s)?;
     let (s, op) = one_of("<>")(s)?;
     let (s, n) = nom_usize(s)?;
     let (s, _) = tag(":")(s)?;
@@ -132,7 +134,8 @@ fn parse_arrayvec_parse_rule(s: &str) -> IResult<&str, ArrayVec<(usize, char, us
     fold_separated_list0(tag(","), parse_rule, ArrayVec::new, |mut v, x| {
         v.push(x);
         v
-    })(s)
+    })
+    .parse(s)
 }
 
 fn parse_workflow(s: &str) -> IResult<&str, (String, Workflow)> {

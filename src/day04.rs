@@ -1,6 +1,8 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use bit_set::BitSet;
-use nom::{bytes::complete::tag, character::complete::space1, sequence::delimited, IResult};
+use nom::{
+    bytes::complete::tag, character::complete::space1, sequence::delimited, IResult, Parser,
+};
 
 use crate::common::nom::{fold_separated_list0, nom_lines, nom_usize, process_input};
 
@@ -13,7 +15,8 @@ fn parse_nums(s: &str) -> IResult<&str, BitSet> {
             acc.insert(n);
             acc
         },
-    )(s)
+    )
+    .parse(s)
 }
 
 fn parse(s: &str) -> IResult<&str, usize> {
@@ -23,14 +26,15 @@ fn parse(s: &str) -> IResult<&str, usize> {
     let (s, _) = tag(":")(s)?;
     let (s, _) = space1(s)?;
     let (s, left) = parse_nums(s)?;
-    let (s, _) = delimited(space1, tag("|"), space1)(s)?;
+    let (s, _) = delimited(space1, tag("|"), space1).parse(s)?;
 
     let (s, count) = fold_separated_list0(
         space1,
         nom_usize,
         || 0,
         |acc, n| acc + usize::from(left.contains(n)),
-    )(s)?;
+    )
+    .parse(s)?;
 
     Ok((s, count))
 }

@@ -7,7 +7,7 @@ use nom::{
     bytes::complete::{tag, take_while1},
     character::complete::{newline, one_of},
     multi::separated_list0,
-    IResult,
+    IResult, Parser,
 };
 use num::Integer;
 type String = smallstr::SmallString<[u8; 2]>;
@@ -102,7 +102,8 @@ fn parse_connection(s: &str) -> IResult<&str, (String, ArrayVec<String, 8>)> {
             v.push(x.into());
             v
         },
-    )(s)?;
+    )
+    .parse(s)?;
 
     Ok((s, (name.into(), res)))
 }

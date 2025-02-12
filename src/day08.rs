@@ -4,8 +4,8 @@ use nom::{
     bytes::complete::{tag, take},
     character::complete::newline,
     combinator::map,
-    sequence::{delimited, tuple},
-    IResult,
+    sequence::delimited,
+    IResult, Parser,
 };
 use num::Integer;
 use rayon::iter::{ParallelBridge, ParallelIterator};
@@ -23,17 +23,18 @@ pub enum Direction {
 }
 
 fn parse_node(s: &str) -> IResult<&str, (String, String, String)> {
-    let (s, key) = map(take(3usize), String::from)(s)?;
+    let (s, key) = map(take(3usize), String::from).parse(s)?;
     let (s, _) = tag(" = ")(s)?;
     let (s, (l, _, r)) = delimited(
         tag("("),
-        tuple((
+        (
             map(take(3usize), String::from),
             tag(", "),
             map(take(3usize), String::from),
-        )),
+        ),
         tag(")"),
-    )(s)?;
+    )
+    .parse(s)?;
 
     Ok((s, (key, l, r)))
 }
@@ -56,7 +57,8 @@ pub fn generator(input: &str) -> (Vec<Direction>, HashMap<String, (String, Strin
     let (_, hm) = fold_separated_list0(newline, parse_node, HashMap::new, |mut hm, (key, l, r)| {
         hm.insert(key, (l, r));
         hm
-    })(network)
+    })
+    .parse(network)
     .unwrap();
     (ins, hm)
 }

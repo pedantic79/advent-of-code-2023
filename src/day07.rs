@@ -4,8 +4,7 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use nom::{
     character::complete::{one_of, space1},
     combinator::map,
-    sequence::tuple,
-    IResult,
+    IResult, Parser,
 };
 
 use crate::common::{
@@ -104,14 +103,16 @@ fn parse_card(s: &str) -> IResult<&str, HandValue> {
             'A' => 14,
             _ => panic!("unknown symbol"),
         })
-    })(s)
+    })
+    .parse(s)
 }
 
 fn parse_hand(s: &str) -> IResult<&str, [HandValue; 5]> {
     map(
-        tuple((parse_card, parse_card, parse_card, parse_card, parse_card)),
+        (parse_card, parse_card, parse_card, parse_card, parse_card),
         |x| [x.0, x.1, x.2, x.3, x.4],
-    )(s)
+    )
+    .parse(s)
 }
 
 fn parse_line(s: &str) -> IResult<&str, Hand> {

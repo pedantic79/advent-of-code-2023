@@ -3,7 +3,7 @@ use nom::{
     bytes::complete::tag,
     character::complete::{hex_digit1, one_of, space1},
     combinator::{map, map_res},
-    IResult,
+    IResult, Parser,
 };
 
 use crate::common::{
@@ -38,7 +38,8 @@ fn parse_line(s: &str) -> IResult<&str, (DigDir, DigDir)> {
         'D' => Dir::Down,
         'R' => Dir::Right,
         _ => unreachable!(),
-    })(s)?;
+    })
+    .parse(s)?;
     let (s, _) = space1(s)?;
     let (s, n) = nom_i64(s)?;
     let (s, _) = space1(s)?;
@@ -54,7 +55,8 @@ fn parse_line(s: &str) -> IResult<&str, (DigDir, DigDir)> {
             _ => panic!("wtf is {:?}", &x[5..]),
         };
         Ok::<_, std::num::ParseIntError>((len, dir))
-    })(s)?;
+    })
+    .parse(s)?;
     let (s, _) = tag(")")(s)?;
 
     Ok((s, (DigDir::new(d, n), DigDir::new(dir, len))))

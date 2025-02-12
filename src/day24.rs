@@ -2,11 +2,8 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 use nalgebra::{Matrix6, RowVector6, Vector6};
 use nom::{
-    bytes::complete::tag,
-    character::complete::space1,
-    combinator::map,
-    sequence::{separated_pair, tuple},
-    IResult,
+    bytes::complete::tag, character::complete::space1, combinator::map, sequence::separated_pair,
+    IResult, Parser,
 };
 
 use crate::common::nom::{nom_i64, nom_lines, process_input};
@@ -84,22 +81,24 @@ fn parse_symbol<'a>(beginning: &'a str) -> impl Fn(&'a str) -> IResult<&'a str, 
 
 fn parse_point(s: &str) -> IResult<&str, Point> {
     map(
-        tuple((
+        (
             nom_i64,
             parse_symbol(","),
             nom_i64,
             parse_symbol(","),
             nom_i64,
-        )),
+        ),
         |(x, _, y, _, z)| Point { x, y, z },
-    )(s)
+    )
+    .parse(s)
 }
 
 fn parse_hailstone(s: &str) -> IResult<&str, Hailstone> {
     map(
         separated_pair(parse_point, parse_symbol(" @"), parse_point),
         |(pos, vel)| Hailstone { pos, vel },
-    )(s)
+    )
+    .parse(s)
 }
 
 #[aoc_generator(day24)]

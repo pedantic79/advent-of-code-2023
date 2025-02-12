@@ -3,7 +3,7 @@ use nom::{
     bytes::complete::{tag, take_until, take_while1},
     character::complete::{space0, space1},
     multi::separated_list1,
-    IResult,
+    IResult, Parser,
 };
 use num::integer::sqrt;
 
@@ -14,7 +14,7 @@ fn parse_line(s: &str) -> IResult<&str, Vec<usize>> {
     let (s, _) = tag(":")(s)?;
     let (s, _) = space0(s)?;
 
-    separated_list1(space1, nom_usize)(s)
+    separated_list1(space1, nom_usize).parse(s)
 }
 
 fn parse_number(s: &str) -> IResult<&str, usize> {

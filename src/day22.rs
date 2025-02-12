@@ -1,9 +1,5 @@
 use aoc_runner_derive::{aoc, aoc_generator};
-use nom::{
-    character::complete::char,
-    sequence::{separated_pair, tuple},
-    IResult,
-};
+use nom::{character::complete::char, sequence::separated_pair, IResult, Parser};
 
 use crate::common::nom::{nom_lines, nom_usize, process_input};
 
@@ -16,10 +12,11 @@ pub struct Block {
 
 fn parse_block(s: &str) -> IResult<&str, Block> {
     let (s, ((x0, _, y0, _, z0), (x1, _, y1, _, z1))) = separated_pair(
-        tuple((nom_usize, char(','), nom_usize, char(','), nom_usize)),
+        (nom_usize, char(','), nom_usize, char(','), nom_usize),
         char('~'),
-        tuple((nom_usize, char(','), nom_usize, char(','), nom_usize)),
-    )(s)?;
+        (nom_usize, char(','), nom_usize, char(','), nom_usize),
+    )
+    .parse(s)?;
 
     Ok((
         s,

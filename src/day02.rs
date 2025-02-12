@@ -3,8 +3,8 @@ use nom::{
     branch::alt,
     bytes::complete::tag,
     combinator::value,
-    sequence::{pair, preceded, tuple},
-    IResult,
+    sequence::{pair, preceded},
+    IResult, Parser,
 };
 
 use crate::common::nom::{fold_separated_list0, nom_lines, nom_usize, process_input};
@@ -41,7 +41,8 @@ fn parse_color(s: &str) -> IResult<&str, (usize, Color)> {
             value(Color::Green, tag(" green")),
             value(Color::Blue, tag(" blue")),
         )),
-    )(s)
+    )
+    .parse(s)
 }
 
 fn parse_cube_set(s: &str) -> IResult<&str, CubeSet> {
@@ -57,7 +58,8 @@ fn parse_cube_set(s: &str) -> IResult<&str, CubeSet> {
             };
             acc
         },
-    )(s)
+    )
+    .parse(s)
 }
 
 fn parse_merged_cube_set(s: &str) -> IResult<&str, CubeSet> {
@@ -67,14 +69,12 @@ fn parse_merged_cube_set(s: &str) -> IResult<&str, CubeSet> {
         let green = acc.green.max(c.green);
         let blue = acc.blue.max(c.blue);
         CubeSet { red, green, blue }
-    })(s)
+    })
+    .parse(s)
 }
 
 fn parse_line(s: &str) -> IResult<&str, CubeSet> {
-    preceded(
-        tuple((tag("Game "), nom_usize, tag(": "))),
-        parse_merged_cube_set,
-    )(s)
+    preceded((tag("Game "), nom_usize, tag(": ")), parse_merged_cube_set).parse(s)
 }
 
 #[aoc_generator(day2)]
