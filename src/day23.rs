@@ -4,11 +4,11 @@ use arrayvec::ArrayVec;
 use pathfinding::{
     directed::bfs,
     matrix::{
-        directions::{self, DIRECTIONS_4},
         Matrix,
+        directions::{self, DIRECTIONS_4},
     },
 };
-use petgraph::{algo::all_simple_paths, Graph};
+use petgraph::{Graph, algo::all_simple_paths};
 use rustc_hash::FxHashMap as HashMap;
 
 #[aoc_generator(day23)]
@@ -82,14 +82,16 @@ where
         }
     }
 
-    all_simple_paths::<ArrayVec<_, 36>, _>(&g, h[&start], h[&end], 0, None)
-        .map(|path| {
-            path.windows(2)
-                .map(|w| g.edges_connecting(w[0], w[1]).next().unwrap().weight())
-                .sum::<usize>()
-        })
-        .max()
-        .unwrap()
+    all_simple_paths::<ArrayVec<_, 36>, _, rustc_hash::FxBuildHasher>(
+        &g, h[&start], h[&end], 0, None,
+    )
+    .map(|path| {
+        path.windows(2)
+            .map(|w| g.edges_connecting(w[0], w[1]).next().unwrap().weight())
+            .sum::<usize>()
+    })
+    .max()
+    .unwrap()
 }
 
 #[aoc(day23, part1)]
