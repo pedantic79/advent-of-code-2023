@@ -4,11 +4,11 @@ use ahash::HashMapExt;
 use aoc_runner_derive::{aoc, aoc_generator};
 use arrayvec::ArrayVec;
 use nom::{
+    IResult, Parser,
     branch::alt,
     bytes::complete::{tag, take_until1, take_while1},
     character::complete::{newline, one_of},
     combinator::{map, value},
-    IResult, Parser,
 };
 use rustc_hash::FxHashMap as HashMap;
 

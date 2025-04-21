@@ -4,10 +4,10 @@ use ahash::{HashMap, HashMapExt};
 use aoc_runner_derive::{aoc, aoc_generator};
 use arrayvec::ArrayVec;
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, take_while1},
     character::complete::{newline, one_of},
     multi::separated_list0,
-    IResult, Parser,
 };
 use num::Integer;
 type String = smallstr::SmallString<[u8; 2]>;

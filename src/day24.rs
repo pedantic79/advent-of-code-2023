@@ -2,8 +2,8 @@ use aoc_runner_derive::{aoc, aoc_generator};
 use itertools::Itertools;
 use nalgebra::{Matrix6, RowVector6, Vector6};
 use nom::{
-    bytes::complete::tag, character::complete::space1, combinator::map, sequence::separated_pair,
-    IResult, Parser,
+    IResult, Parser, bytes::complete::tag, character::complete::space1, combinator::map,
+    sequence::separated_pair,
 };
 
 use crate::common::nom::{nom_i64, nom_lines, process_input};

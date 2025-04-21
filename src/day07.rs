@@ -2,9 +2,9 @@ use std::cmp::{Ordering, Reverse};
 
 use aoc_runner_derive::{aoc, aoc_generator};
 use nom::{
+    IResult, Parser,
     character::complete::{one_of, space1},
     combinator::map,
-    IResult, Parser,
 };
 
 use crate::common::{

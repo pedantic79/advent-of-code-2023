@@ -1,10 +1,10 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use nom::{
+    IResult, Parser,
     branch::alt,
     bytes::complete::tag,
     combinator::value,
     sequence::{pair, preceded},
-    IResult, Parser,
 };
 
 use crate::common::nom::{fold_separated_list0, nom_lines, nom_usize, process_input};

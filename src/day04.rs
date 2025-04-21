@@ -1,7 +1,7 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use bit_set::BitSet;
 use nom::{
-    bytes::complete::tag, character::complete::space1, sequence::delimited, IResult, Parser,
+    IResult, Parser, bytes::complete::tag, character::complete::space1, sequence::delimited,
 };
 
 use crate::common::nom::{fold_separated_list0, nom_lines, nom_usize, process_input};

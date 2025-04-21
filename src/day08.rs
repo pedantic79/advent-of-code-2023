@@ -1,11 +1,11 @@
 use ahash::HashMapExt;
 use aoc_runner_derive::{aoc, aoc_generator};
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, take},
     character::complete::newline,
     combinator::map,
     sequence::delimited,
-    IResult, Parser,
 };
 use num::Integer;
 use rayon::iter::{ParallelBridge, ParallelIterator};

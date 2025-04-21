@@ -1,9 +1,9 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use nom::{
+    IResult, Parser,
     bytes::complete::{tag, take_until, take_while1},
     character::complete::{space0, space1},
     multi::separated_list1,
-    IResult, Parser,
 };
 use num::integer::sqrt;
 

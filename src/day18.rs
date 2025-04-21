@@ -1,9 +1,9 @@
 use aoc_runner_derive::{aoc, aoc_generator};
 use nom::{
+    IResult, Parser,
     bytes::complete::tag,
     character::complete::{hex_digit1, one_of, space1},
     combinator::{map, map_res},
-    IResult, Parser,
 };
 
 use crate::common::{
