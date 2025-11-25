@@ -105,11 +105,10 @@ pub fn part1(inputs: &Matrix<u8>) -> usize {
             match grid.get(p) {
                 Some(b'#') => (),
                 Some(&d @ (b'>' | b'<' | b'^' | b'v')) => {
-                    if let Some(next_p) = grid.move_in_direction(p, get_direction(d)) {
-                        if check_valid(next_p) {
+                    if let Some(next_p) = grid.move_in_direction(p, get_direction(d))
+                        && check_valid(next_p) {
                             neighbors.push(next_p);
                         }
-                    }
                 }
                 Some(b'.') => {
                     neighbors.extend(DIRECTIONS_4.iter().filter_map(|d| {

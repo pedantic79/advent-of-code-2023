@@ -79,11 +79,10 @@ impl Grid {
     ) {
         for &index in input.iter() {
             for neigh in self.neighbors(index) {
-                if let Some(State::Plot | State::Start) = self.get(neigh) {
-                    if output.insert(neigh) {
+                if let Some(State::Plot | State::Start) = self.get(neigh)
+                    && output.insert(neigh) {
                         temp.push(neigh);
                     }
-                }
             }
         }
         input.clear();

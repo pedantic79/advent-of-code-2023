@@ -230,8 +230,8 @@ pub fn part2(inputs: &[Machine]) -> u64 {
         queue.push_back((String::from("bu"), String::from("br"), Signal::Low));
 
         while let Some((fr, to, signal)) = queue.pop_front() {
-            if let Some(pos) = penultimate.iter().position(|k| k == &to) {
-                if signal == Signal::Low {
+            if let Some(pos) = penultimate.iter().position(|k| k == &to)
+                && signal == Signal::Low {
                     frequency.push(i);
 
                     penultimate.remove(pos);
@@ -240,7 +240,6 @@ pub fn part2(inputs: &[Machine]) -> u64 {
                         return frequency.iter().fold(1, |lcm, v| lcm.lcm(v));
                     }
                 }
-            }
 
             if let Some(m) = machines.get_mut(&to) {
                 m.pulse(&fr, signal, &mut queue);
