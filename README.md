@@ -1,5 +1,11 @@
 # Advent of Code 2023 - Rust
 
+> [!IMPORTANT]
+> This repository is archived. The 2023 solutions now live in
+> [pedantic79/advent-of-code](https://github.com/pedantic79/advent-of-code) under
+> [`src/y2023`](https://github.com/pedantic79/advent-of-code/tree/main/src/y2023).
+> See the [2023 puzzle list](https://github.com/pedantic79/advent-of-code#y2023) there.
+
 - [Day 1: Trebuchet?!](https://adventofcode.com/2023/day/1)
   - [solution](src/day01.rs)
 - [Day 2: Cube Conundrum](https://adventofcode.com/2023/day/2)
